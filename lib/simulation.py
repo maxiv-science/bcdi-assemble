@@ -2,8 +2,7 @@ import ptypy
 import nmutils
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-import matplotlib.patches
+import matplotlib.colors
 plt.ion()
 
 try:
@@ -16,7 +15,7 @@ try:
 except AttributeError:
     raise Exception('Use 3dBPP ptypy version!')
 
-def simulate_octahedron(offsets, rolls):
+def simulate_octahedron(offsets, rolls, photons_in_central_frame=1e6, plot=True):
     """
     Simulate a particle rotating through its rocking curve in a complicated
     way, as well as diffusion along the powder ring.
@@ -25,7 +24,7 @@ def simulate_octahedron(offsets, rolls):
     projection operator before doing the 2D FT.
     """
 
-    # physics
+    ### define the physics
     a = 4.065e-10
     E = 10000.
     d = a / np.sqrt(3) # (111)
@@ -50,20 +49,7 @@ def simulate_octahedron(offsets, rolls):
     S = C.storages['Sobj']
     C.reformat()
 
-    ### prepare diffraction plots
-    diff_max = 6e6
-    exit_max = 13.
-    n = int(np.ceil(np.sqrt(len(offsets))))
-    fig, ax = plt.subplots(ncols=n, nrows=n, figsize=(13, 7.55))
-    ax = ax.flatten()
-    fig.subplots_adjust(hspace=0, wspace=0, right=.85, left=.06, bottom=.1, top=.99)
-    cbar_ax = fig.add_axes((.91, .2, .03, .6))
-
-    fig.text(.02, .55, 'rocking angle (degrees)', rotation=90, fontsize=16, ha='left', va='center')
-    fig.text(.5, .02, 'phi angle (degrees)', ha='center', va='bottom', fontsize=16)
-    plt.pause(0.1)
-
-    ### the main calculation loop
+    ### set up the particle
     o = TruncatedOctahedron(truncation)
     o.shift([-.5, -.5, -.5])
     o.rotate('z', 45)
@@ -72,13 +58,11 @@ def simulate_octahedron(offsets, rolls):
     # now we have an octahedron lying down on the its xy plane.
     # the conversion between the right handed octahedron's coordinates
     # and Berenguer's is just yB = -y
-
     o.rotate('z', angle)
     xx, zz, yy = g.transformed_grid(S, input_space='real', input_system='natural')
     v.data[:] = o.contains((xx, -yy, zz))
 
-
-    ### uneven data
+    ### calculate
     data = []
     for ioffset, offset in enumerate(offsets):
         g.bragg_offset = offset
@@ -91,16 +75,25 @@ def simulate_octahedron(offsets, rolls):
                      'diff': I,
                      'exit': exit})
 
-        # add shot noise and plot diffraction
-        if ioffset == 0:
-            photons_per_intensity = 2e4 / np.sum(I)
-        photons = photons_per_intensity * np.sum(I)
-        diff = nmutils.utils.noisyImage(I, photonsTotal=photons)
-        ax[ioffset].imshow(diff, interpolation='none', vmax=diff_max * photons_per_intensity, cmap='jet', norm=matplotlib.colors.LogNorm())
-        plt.setp(ax[ioffset], 'xticks', [], 'yticks', [])
-
-        plt.draw()
-        plt.pause(.01)
-
+    ### add shot noise
     frames = [d['diff'] for d in data]
-    return frames
+    central = np.argmin(np.abs(offsets))
+    photons_per_intensity = photons_in_central_frame / frames[central].sum()
+    global_max = frames[central].max() * photons_per_intensity
+    noisy_frames = []
+    for i, frame in enumerate(frames):
+        noisy_frames.append(
+            nmutils.utils.noisyImage(frame, photonsTotal=photons_per_intensity*frame.sum()).astype(np.uint32)
+            )
+
+    ### plot if requested
+    if plot:
+        n = int(np.ceil(np.sqrt(len(offsets))))
+        fig, ax = plt.subplots(ncols=n, nrows=n, figsize=(13, 7.55))
+        ax = ax.flatten()
+        fig.subplots_adjust(hspace=0, wspace=0, right=.85, left=.06, bottom=.1, top=.99)
+        for i, frame in enumerate(frames):
+            ax[i].imshow(noisy_frames[i], vmax=global_max, cmap='jet', norm=matplotlib.colors.LogNorm())
+        plt.pause(.1)
+
+    return noisy_frames
