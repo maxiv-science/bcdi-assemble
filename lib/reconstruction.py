@@ -10,24 +10,28 @@ def first_axis_com(a):
 def M(W, priors, data, prior_decay=1.0):
     Nj = W.shape[0]
     Nk = data.shape[0]
-    Rjk = np.empty((Nj, Nk), dtype=np.complex128)
+    logRjk = np.empty((Nj, Nk), dtype=np.complex128)
     wjk = np.empty((Nj, Nk), dtype=float)
 
     # first, calculate the probabilities Pjk based on the current model
     W[:] = W / np.mean(np.abs(W)) * np.mean(data)
     for j in range(Nj):
         for k in range(Nk):
-            Rjk[j, k] = np.exp(np.sum(data[k] * np.log10(W[j]+1e-6) - W[j]))
+            logRjk[j, k] = np.sum(data[k] * np.log(W[j]) - W[j])
             # prior weight for each observation biased towards where it was placed last time:
             wjk[j, k] = np.exp(-np.abs(j-priors[k])/prior_decay)
-    Pjk = wjk*Rjk / np.sum(wjk*Rjk, axis=0)
+    logPjk = np.log(wjk) + logRjk
+    # pragmatic pre-normalization to avoid overflow
+    logPjk -= np.max(logPjk, axis=0)
+    Pjk = np.real(np.exp(logPjk))
+    Pjk /= np.sum(Pjk, axis=0)
     
     # then carry out the likelihood maximization (M) step
     for j in range(Nj):
         W[j][:] = 0.0
         for k in range(Nk):
             W[j][:] = W[j] + Pjk[j][k] * data[k]
-        W[j][:] = W[j] / np.sum(Pjk[j, :])
+        W[j][:] = W[j] / (np.sum(Pjk[j, :]) + 1e-20)
 
     # then update the prior weights
     priors = first_axis_com(np.abs(Pjk))

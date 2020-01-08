@@ -10,7 +10,7 @@ N = 15
 
 ### load and plot generated data
 filename = 'data/test_data.npz'
-data = np.load(filename)['frames'] * 1e-6
+data = np.load(filename)['frames']
 o = np.load(filename)['offsets']
 ax = plt.gca()
 ax.plot(o, 'r', label='theta')
@@ -29,6 +29,7 @@ ax[1].set_title('a central frame')
 
 ### build and plot the initial model from the autocorrelation envelope
 W, envelope = generate_initial(N, data.shape[-1], support=.5)
+W += 1e-6
 
 ### iteration time!
 priors = np.linspace(0, N, len(data))
