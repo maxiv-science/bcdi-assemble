@@ -36,8 +36,8 @@ priors = np.linspace(0, N, len(data))
 fig, ax = plt.subplots(ncols=5, figsize=(12,3))
 errors = []
 for i in range(50):
-
-    W, priors, Pjk = M(W, priors, data)
+    fudge = np.interp(i, [0, 10, 40], [.05, .05, 1.0])
+    W, priors, Pjk = M(W, priors, data, beta=fudge)
     W, error = C(W, envelope)
     errors.append(error)
 

@@ -7,7 +7,7 @@ def first_axis_com(a):
     inds = np.arange(a.shape[0], dtype=int).reshape((-1, 1))
     return np.sum(a*inds, axis=0) / np.sum(a, axis=0)
 
-def M(W, priors, data, prior_decay=1.0):
+def M(W, priors, data, prior_decay=1.0, beta=1.0):
     Nj = W.shape[0]
     Nk = data.shape[0]
     logRjk = np.empty((Nj, Nk), dtype=np.complex128)
@@ -20,7 +20,7 @@ def M(W, priors, data, prior_decay=1.0):
             logRjk[j, k] = np.sum(data[k] * np.log(W[j]) - W[j])
             # prior weight for each observation biased towards where it was placed last time:
             wjk[j, k] = np.exp(-np.abs(j-priors[k])/prior_decay)
-    logPjk = np.log(wjk) + logRjk
+    logPjk = np.log(wjk) + beta * logRjk
     # pragmatic pre-normalization to avoid overflow
     logPjk -= np.max(logPjk, axis=0)
     Pjk = np.real(np.exp(logPjk))
