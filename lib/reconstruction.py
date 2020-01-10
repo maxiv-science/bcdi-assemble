@@ -22,25 +22,21 @@ def build_model(data, Pjk):
         W[j][:] = W[j] / (np.sum(Pjk[j, :]) + 1e-20)
     return W
 
-def M(W, priors, data, prior_decay=1.0, beta=1.0):
+def M(W, data, beta=1.0):
     """
-    Performs the M update rule, Loh et al PRE 2009 eqns 8-11,
-    with the addition of a home-made prior and the fudge factor
-    from Ayyer et al J Appl Cryst 2016.
+    Performs the M update rule, Loh et al PRE 2009 eqns 8-11, with the
+    addition of the fudge factor from Ayyer et al J Appl Cryst 2016.
     """
     Nj = W.shape[0]
     Nk = data.shape[0]
     logRjk = np.empty((Nj, Nk), dtype=np.complex128)
-    wjk = np.empty((Nj, Nk), dtype=float)
 
     # first, calculate the probabilities Pjk based on the current model
     W[:] = W / np.mean(np.abs(W)) * np.mean(data)
     for j in range(Nj):
         for k in range(Nk):
             logRjk[j, k] = np.sum(data[k] * np.log(W[j]) - W[j])
-            # prior weight for each observation biased towards where it was placed last time:
-            wjk[j, k] = 1 if prior_decay is None else np.exp(-np.abs(j-priors[k])/prior_decay)
-    logPjk = np.log(wjk) + beta * logRjk
+    logPjk = beta * logRjk
     # pragmatic pre-normalization to avoid overflow
     logPjk -= np.max(logPjk, axis=0)
     Pjk = np.exp(np.real(logPjk))
@@ -49,10 +45,7 @@ def M(W, priors, data, prior_decay=1.0, beta=1.0):
     # then carry out the likelihood maximization (M) step
     W = build_model(data, Pjk)
 
-    # then update the prior weights
-    priors = first_axis_com(np.abs(Pjk))
-
-    return W, priors, Pjk
+    return W, Pjk
 
 def C(W, envelope):
     ft = np.fft.fftn(W)

@@ -3,13 +3,13 @@ import matplotlib.pyplot as plt
 plt.ion()
 
 from lib.reconstruction import M, C
-from lib.reconstruction import generate_envelope, generate_initial
+from lib.reconstruction import generate_envelope, generate_initial, first_axis_com
 
 ### the number of theta bins of the model
 Nj = 15
 
 ### load and plot generated data
-filename = 'data/ten_simulations_4.npz'
+filename = 'data/ten_simulations_3.npz'
 data = np.load(filename)['frames']
 o = np.load(filename)['offsets']
 ax = plt.gca()
@@ -32,16 +32,15 @@ envelope = generate_envelope(Nj, data.shape[-1], support=.9)
 W = generate_initial(data, Nj)
 
 ### iteration time!
-priors = np.linspace(0, Nj, len(data))
 fig, ax = plt.subplots(ncols=5, figsize=(12,3))
 errors = []
 for i in range(50):
     # we need super small betas to get any decent probability spread
     fudge = np.interp(i, [0, 10, 30], [.00001, .00001, .0005])
-    fudge = .0002
+    #fudge = .0002
     env = np.interp(i, [0, 10, 30], [.5, .5, .9])
     envelope = generate_envelope(Nj, data.shape[-1], support=env)
-    W, priors, Pjk = M(W, priors, data, beta=fudge, prior_decay=None)
+    W, Pjk = M(W, data, beta=fudge)
     W, error = C(W, envelope)
     errors.append(error)
 
@@ -49,7 +48,7 @@ for i in range(50):
     ax[0].imshow(np.abs(W[:,64,:]), vmax=np.abs(W[:,64,:]).max()/10)
     ax[1].imshow(np.abs(W[Nj//2,:,:]), vmax=np.abs(W[Nj//2]).max()/10)
     ax[2].imshow(np.abs(Pjk), vmax=np.abs(Pjk).max()/10)
-    ax[3].plot(priors)
+    ax[3].plot(first_axis_com(Pjk))
     ax[4].plot(errors)
     ax[0].set_title('model from above')
     ax[1].set_title('central model slice')
