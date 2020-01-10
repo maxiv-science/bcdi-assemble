@@ -3,10 +3,10 @@ import matplotlib.pyplot as plt
 plt.ion()
 
 from lib.reconstruction import M, C
-from lib.reconstruction import generate_initial
+from lib.reconstruction import generate_envelope, generate_initial
 
 ### the number of theta bins of the model
-N = 15
+Nj = 15
 
 ### load and plot generated data
 filename = 'data/test_data.npz'
@@ -27,12 +27,12 @@ ax[1].imshow(np.abs(data[len(data)//2,:,:]), vmax=np.abs(data[len(data)//2]).max
 ax[0].set_title('frames seen from above')
 ax[1].set_title('a central frame')
 
-### build and plot the initial model from the autocorrelation envelope
-W, envelope = generate_initial(N, data.shape[-1], support=.5)
-W += 1e-6
+### build the the autocorrelation envelope and the initial model
+envelope = generate_envelope(Nj, data.shape[-1], support=.9)
+W = generate_initial(data, Nj)
 
 ### iteration time!
-priors = np.linspace(0, N, len(data))
+priors = np.linspace(0, Nj, len(data))
 fig, ax = plt.subplots(ncols=5, figsize=(12,3))
 errors = []
 for i in range(20):
@@ -45,7 +45,7 @@ for i in range(20):
 
     [a.clear() for a in ax]
     ax[0].imshow(np.abs(W[:,64,:]), vmax=np.abs(W[:,64,:]).max()/10)
-    ax[1].imshow(np.abs(W[N//2,:,:]), vmax=np.abs(W[N//2]).max()/10)
+    ax[1].imshow(np.abs(W[Nj//2,:,:]), vmax=np.abs(W[Nj//2]).max()/10)
     ax[2].imshow(np.abs(Pjk), vmax=np.abs(Pjk).max()/10)
     ax[3].plot(priors)
     ax[4].plot(errors)
