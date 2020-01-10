@@ -19,7 +19,7 @@ def M(W, priors, data, prior_decay=1.0, beta=1.0):
         for k in range(Nk):
             logRjk[j, k] = np.sum(data[k] * np.log(W[j]) - W[j])
             # prior weight for each observation biased towards where it was placed last time:
-            wjk[j, k] = np.exp(-np.abs(j-priors[k])/prior_decay)
+            wjk[j, k] = 1 if prior_decay is None else np.exp(-np.abs(j-priors[k])/prior_decay)
     logPjk = np.log(wjk) + beta * logRjk
     # pragmatic pre-normalization to avoid overflow
     logPjk -= np.max(logPjk, axis=0)
