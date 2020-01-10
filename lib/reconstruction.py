@@ -23,7 +23,7 @@ def M(W, priors, data, prior_decay=1.0, beta=1.0):
     logPjk = np.log(wjk) + beta * logRjk
     # pragmatic pre-normalization to avoid overflow
     logPjk -= np.max(logPjk, axis=0)
-    Pjk = np.real(np.exp(logPjk))
+    Pjk = np.exp(np.real(logPjk))
     Pjk /= np.sum(Pjk, axis=0)
     
     # then carry out the likelihood maximization (M) step
