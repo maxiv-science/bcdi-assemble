@@ -20,7 +20,7 @@ def build_model(data, Pjk):
     """
     Nj, Nk = Pjk.shape
     Npix = data.shape[-1]
-    W = np.zeros((Nj, Npix, Npix), dtype=np.complex128)
+    W = np.zeros((Nj, Npix, Npix), dtype=np.float64)
     for j in range(Nj):
         W[j][:] = 0.0
         for k in range(Nk):
@@ -35,10 +35,9 @@ def M(W, data, beta=1.0, force_continuity=True):
     """
     Nj = W.shape[0]
     Nk = data.shape[0]
-    logRjk = np.empty((Nj, Nk), dtype=np.complex128)
+    logRjk = np.empty((Nj, Nk), dtype=np.float64)
 
     # first, calculate the probabilities Pjk based on the current model
-    W[:] = W / np.mean(np.abs(W)) * np.mean(data)
     for j in range(Nj):
         for k in range(Nk):
             logRjk[j, k] = np.sum(data[k] * np.log(W[j]) - W[j])
@@ -59,7 +58,7 @@ def M(W, data, beta=1.0, force_continuity=True):
             
     # pragmatic pre-normalization to avoid overflow
     logPjk -= np.max(logPjk, axis=0)
-    Pjk = np.exp(np.real(logPjk))
+    Pjk = np.exp(logPjk)
     Pjk /= np.sum(Pjk, axis=0)
     
     # then carry out the likelihood maximization (M) step
@@ -70,7 +69,7 @@ def M(W, data, beta=1.0, force_continuity=True):
 def C(W, envelope):
     ft = np.fft.fftn(W)
     error = np.sum(np.abs((1-envelope)*ft))
-    W[:] = np.fft.ifftn(ft * envelope)
+    W = np.abs(np.fft.ifftn(ft * envelope))
     return W, error
 
 def generate_envelope(N, shape, support=0.5):
