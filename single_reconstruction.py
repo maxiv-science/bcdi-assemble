@@ -9,7 +9,7 @@ from lib.reconstruction import generate_envelope, generate_initial, first_axis_c
 Nj = 15
 
 ### load and plot generated data
-filename = 'data/ten_simulations_3.npz'
+filename = 'data/ten_simulations_4.npz'
 data = np.load(filename)['frames']
 o = np.load(filename)['offsets']
 ax = plt.gca()
@@ -28,19 +28,19 @@ ax[0].set_title('frames seen from above')
 ax[1].set_title('a central frame')
 
 ### build the the autocorrelation envelope and the initial model
-envelope = generate_envelope(Nj, data.shape[-1], support=.9)
+envelope = generate_envelope(Nj, data.shape[-1], support=.5)
 W = generate_initial(data, Nj)
 
 ### iteration time!
 fig, ax = plt.subplots(ncols=5, figsize=(12,3))
 errors = []
-for i in range(50):
+for i in range(40):
     # we need super small betas to get any decent probability spread
     fudge = np.interp(i, [0, 10, 30], [.00001, .00001, .0005])
     #fudge = .0002
     env = np.interp(i, [0, 10, 30], [.5, .5, .9])
     envelope = generate_envelope(Nj, data.shape[-1], support=env)
-    W, Pjk = M(W, data, beta=fudge)
+    W, Pjk = M(W, data, beta=fudge, force_continuity=i>15)
     W, error = C(W, envelope)
     errors.append(error)
 
@@ -62,7 +62,7 @@ fix, ax = plt.subplots(nrows=3, sharex=True, figsize=(4,6))
 ax[0].plot(o)
 ax[1].plot(o)
 ax[1].set_ylim([-.2,.3])
-ax[2].imshow(np.flipud(np.abs(Pjk)), aspect='auto')
+ax[2].imshow((np.abs(Pjk)), aspect='auto')
 ax[0].set_title('simulated theta')
 ax[1].set_title('simulated theta - closeup')
 ax[2].set_title('reconstructed |Pjk|')

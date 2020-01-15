@@ -4,8 +4,14 @@ def first_axis_com(a):
     """
     Calculates the center of mass of an array along each column.
     """
+    if a.ndim == 1:
+        a = a[:, None]
     inds = np.arange(a.shape[0], dtype=int).reshape((-1, 1))
     return np.sum(a*inds, axis=0) / np.sum(a, axis=0)
+
+def log_gauss(mu, x, sigma):
+    norm = 1 / (sigma * np.sqrt(2 * np.pi))
+    return np.log(norm) - 0.5 * ((x - mu) / sigma)**2
 
 def build_model(data, Pjk):
     """
@@ -22,7 +28,7 @@ def build_model(data, Pjk):
         W[j][:] = W[j] / (np.sum(Pjk[j, :]) + 1e-20)
     return W
 
-def M(W, data, beta=1.0):
+def M(W, data, beta=1.0, force_continuity=True):
     """
     Performs the M update rule, Loh et al PRE 2009 eqns 8-11, with the
     addition of the fudge factor from Ayyer et al J Appl Cryst 2016.
@@ -37,6 +43,20 @@ def M(W, data, beta=1.0):
         for k in range(Nk):
             logRjk[j, k] = np.sum(data[k] * np.log(W[j]) - W[j])
     logPjk = beta * logRjk
+
+    # optionally force Pjk to describe something continuous
+    if force_continuity==True:
+        kmax = np.argmax(np.sum(data, axis=(1,2)))
+        com = np.argmax(logPjk[:, kmax])
+        np.argmax(logPjk[:, kmax])
+        logPjk[:, kmax] += log_gauss(com, np.arange(Nj), Nj/4)
+        for k in range(kmax+1, Nk):
+            bias = np.argmax(logPjk[:, k-1])
+            logPjk[:, k] += log_gauss(bias, np.arange(Nj), Nj/4)
+        for k in range(kmax-1, -1, -1):
+            bias = np.argmax(logPjk[:, k+1])
+            logPjk[:, k] += log_gauss(bias, np.arange(Nj), Nj/4)
+            
     # pragmatic pre-normalization to avoid overflow
     logPjk -= np.max(logPjk, axis=0)
     Pjk = np.exp(np.real(logPjk))
