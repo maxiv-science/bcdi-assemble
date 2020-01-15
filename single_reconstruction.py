@@ -6,7 +6,7 @@ from lib.reconstruction import M, C
 from lib.reconstruction import generate_envelope, generate_initial, first_axis_com
 
 ### the number of theta bins of the model
-Nj = 15
+Nj = 10
 
 ### load and plot generated data
 filename = 'data/ten_simulations_4.npz'
@@ -34,15 +34,21 @@ W = generate_initial(data, Nj)
 ### iteration time!
 fig, ax = plt.subplots(ncols=5, figsize=(12,3))
 errors = []
-for i in range(40):
-    # we need super small betas to get any decent probability spread
-    fudge = np.interp(i, [0, 10, 30], [.00001, .00001, .0005])
-    #fudge = .0002
-    env = np.interp(i, [0, 10, 30], [.5, .5, .9])
-    envelope = generate_envelope(Nj, data.shape[-1], support=env)
-    W, Pjk = M(W, data, beta=fudge, force_continuity=i>15)
+fudge = 1e-4
+for i in range(200):
+
+    W, Pjk = M(W, data, beta=fudge, force_continuity=True)
     W, error = C(W, envelope)
     errors.append(error)
+
+    # expand the resolution now and then
+    if i and (Nj<20) and (i % 20) == 0:
+        fudge *= np.sqrt(2)
+        W = np.pad(W, ((1,1),(0,0),(0,0)))
+        Pjk = np.pad(Pjk, ((1,1),(0,0)))
+        Nj = W.shape[0]
+        envelope = generate_envelope(Nj, data.shape[-1], support=.5)
+        print('increased Nj to %u'%Nj)
 
     [a.clear() for a in ax]
     ax[0].imshow(np.abs(W[:,64,:]), vmax=np.abs(W[:,64,:]).max()/10)
@@ -58,11 +64,10 @@ for i in range(40):
     plt.pause(.01)
 
 ### plot the result and compare to the simulated truth
-fix, ax = plt.subplots(nrows=3, sharex=True, figsize=(4,6))
+fix, ax = plt.subplots(nrows=2, sharex=True, figsize=(4,4))
 ax[0].plot(o)
-ax[1].plot(o)
-ax[1].set_ylim([-.2,.3])
-ax[2].imshow((np.abs(Pjk)), aspect='auto')
+if np.argmax(Pjk[:,-1]) > np.argmax(Pjk[:,0]):
+    Pjk = np.flipud(Pjk)
+ax[1].imshow(Pjk, aspect='auto')
 ax[0].set_title('simulated theta')
-ax[1].set_title('simulated theta - closeup')
-ax[2].set_title('reconstructed |Pjk|')
+ax[1].set_title('reconstructed |Pjk|')

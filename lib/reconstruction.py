@@ -40,7 +40,7 @@ def M(W, data, beta=1.0, force_continuity=True):
     # first, calculate the probabilities Pjk based on the current model
     for j in range(Nj):
         for k in range(Nk):
-            logRjk[j, k] = np.sum(data[k] * np.log(W[j]) - W[j])
+            logRjk[j, k] = np.sum(data[k] * np.log(W[j] + 1e-20) - W[j])
     logPjk = beta * logRjk
 
     # optionally force Pjk to describe something continuous
