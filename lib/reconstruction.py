@@ -13,58 +13,61 @@ def log_gauss(mu, x, sigma):
     norm = 1 / (sigma * np.sqrt(2 * np.pi))
     return np.log(norm) - 0.5 * ((x - mu) / sigma)**2
 
-def build_model(data, Pjk):
+def build_model(data, Pjlk, ml=1):
     """
     Returns the maximum likelihood model W[j] based on the data[k] and
     probability matrix P[j,k]. This is Loh et al PRE 2009 eqn 11.
     """
-    Nj, Nk = Pjk.shape
+    Nj, Nl, Nk = Pjlk.shape
     Npix = data.shape[-1]
     W = np.zeros((Nj, Npix, Npix), dtype=np.float64)
     for j in range(Nj):
         W[j][:] = 0.0
-        for k in range(Nk):
-            W[j][:] = W[j] + Pjk[j][k] * data[k]
-        W[j][:] = W[j] / (np.sum(Pjk[j, :]) + 1e-20)
+        for l in range(Nl):
+            for k in range(Nk):
+                rolled = np.roll(data[k], ml*(l-Nl//2), axis=-1)
+                W[j][:] = W[j] + Pjlk[j, l, k] * rolled
+        W[j][:] = W[j] / (np.sum(Pjlk[j, :, :]) + 1e-20)
     return W
 
-def M(W, data, beta=1.0, force_continuity=True):
+def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=True):
     """
     Performs the M update rule, Loh et al PRE 2009 eqns 8-11, with the
     addition of the fudge factor from Ayyer et al J Appl Cryst 2016.
     """
     Nj = W.shape[0]
     Nk = data.shape[0]
-    logRjk = np.empty((Nj, Nk), dtype=np.float64)
+    logRjlk = np.empty((Nj, Nl, Nk), dtype=np.float64)
 
-    # first, calculate the probabilities Pjk based on the current model
+    # first, calculate the probabilities Pjlk based on the current model
     for j in range(Nj):
         for k in range(Nk):
-            logRjk[j, k] = np.sum(data[k] * np.log(W[j] + 1e-20) - W[j])
-    logPjk = beta * logRjk
+            for l in range(Nl):
+                rolled = np.roll(data[k], ml*(l-Nl//2), axis=-1)
+                logRjlk[j, l, k] = np.sum(rolled * np.log(W[j] + 1e-20) - W[j])
+    logPjlk = beta * logRjlk
 
     # optionally force Pjk to describe something continuous
     if force_continuity==True:
         kmax = np.argmax(np.sum(data, axis=(1,2)))
-        com = np.argmax(logPjk[:, kmax])
-        np.argmax(logPjk[:, kmax])
-        logPjk[:, kmax] += log_gauss(com, np.arange(Nj), Nj/4)
+        com = np.argmax(np.sum(logPjlk, axis=1)[:, kmax])
+        logPjlk[:, :, kmax] += log_gauss(com, np.arange(Nj), Nj/4)[:, None]
         for k in range(kmax+1, Nk):
-            bias = np.argmax(logPjk[:, k-1])
-            logPjk[:, k] += log_gauss(bias, np.arange(Nj), Nj/4)
+            bias = np.argmax(np.sum(logPjlk, axis=1)[:, k-1])
+            logPjlk[:, :, k] += log_gauss(bias, np.arange(Nj), Nj/4)[:, None]
         for k in range(kmax-1, -1, -1):
-            bias = np.argmax(logPjk[:, k+1])
-            logPjk[:, k] += log_gauss(bias, np.arange(Nj), Nj/4)
+            bias = np.argmax(np.sum(logPjlk, axis=1)[:, k+1])
+            logPjlk[:, :, k] += log_gauss(bias, np.arange(Nj), Nj/4)[:, None]
             
     # pragmatic pre-normalization to avoid overflow
-    logPjk -= np.max(logPjk, axis=0)
-    Pjk = np.exp(logPjk)
-    Pjk /= np.sum(Pjk, axis=0)
+    logPjlk -= np.max(logPjlk, axis=(0,1))
+    Pjlk = np.exp(logPjlk)
+    Pjlk /= np.sum(Pjlk, axis=(0,1))
     
     # then carry out the likelihood maximization (M) step
-    W = build_model(data, Pjk)
+    W = build_model(data, Pjlk)
 
-    return W, Pjk
+    return W, Pjlk
 
 def C(W, envelope):
     ft = np.fft.fftn(W)
@@ -83,11 +86,13 @@ def generate_envelope(N, shape, support=0.5):
 
 def generate_initial(data, Nj, sigma=1.):
     """
-    Generates an initial model W based on a simle ramp.
+    Generates an initial model W based on a simle ramp,
+    with no rotation.
     """
     initial = np.linspace(0, Nj-1, len(data))
     Nk = len(data)
     jj = np.indices((Nj, Nk))[0]
     Pjk = np.exp(-(initial-jj)**2 / sigma**2 / 2)
     Pjk /= Pjk.sum(axis=0)
-    return build_model(data, Pjk) + 1e-20
+    Pjlk = Pjk.reshape((Nj, 1, Nk))
+    return build_model(data, Pjlk) + 1e-20
