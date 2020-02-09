@@ -75,13 +75,21 @@ def C(W, envelope):
     W = np.abs(np.fft.ifftn(ft * envelope))
     return W, error
 
-def generate_envelope(N, shape, support=0.5):
+def generate_envelope(N, shape, support=0.5, type='box'):
     # the actual envelope - need to figure out the pixel sizes of the autocorrelation...
     envelope = np.ones((N, shape, shape), dtype=int)
     n1, n2 = (int(np.floor(s * (support/2))) for s in (N, shape))
-    envelope[n1:-n1] = 0
-    envelope[:, n2:-n2] = 0
-    envelope[:, :, n2:-n2] = 0
+    if type == 'box':
+        envelope[n1:-n1] = 0
+        envelope[:, n2:-n2] = 0
+        envelope[:, :, n2:-n2] = 0
+    elif type == 'sphere':
+        inds = np.indices(envelope.shape)
+        center = np.array(envelope.shape) // 2
+        ri, rj, rk = inds - center.reshape((-1, 1, 1, 1))
+        r = ri**2 / n1**2 + rj**2 / n2**2 + rk**2 / n2**2
+        envelope[np.where(r > 1)] = 0
+        envelope = np.roll(envelope, (N//2, shape//2, shape//2), axis=(0,1,2))
     return envelope
 
 def generate_initial(data, Nj, sigma=1.):
