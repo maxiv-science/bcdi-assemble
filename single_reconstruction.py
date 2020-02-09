@@ -6,7 +6,7 @@ from lib.reconstruction import M, C
 from lib.reconstruction import generate_envelope, generate_initial, first_axis_com
 
 ### the number of theta bins of the model
-Nj = 10
+Nj = 20
 Nl = 36
 ml = 1
 
@@ -39,25 +39,26 @@ ax[1].set_title('a central frame')
 #    rolls[k] = shift
 
 ### build the the autocorrelation envelope and the initial model
-envelope = generate_envelope(Nj, data.shape[-1], support=.5)
+envelope = generate_envelope(Nj, data.shape[-1], support=.25, type='sphere')
 W = generate_initial(data, Nj)
 
 ### iteration time!
 fig, ax = plt.subplots(ncols=5, figsize=(12,3))
 errors = []
-fudge = 1e-4
-for i in range(80):
+fudge = 5e-5
+for i in range(60):
+    print(i)
 
     W, Pjlk = M(W, data, Nl=Nl, ml=ml, beta=fudge, force_continuity=True)
     W, error = C(W, envelope)
     errors.append(error)
 
     # expand the resolution now and then
-    if i and (Nj<20) and (i % 10) == 0:
+    if i and (Nj<40) and (i % 10) == 0:
         fudge *= np.sqrt(2)
-        W = np.pad(W, ((1,1),(0,0),(0,0)))
+        W = np.pad(W, ((2,2),(0,0),(0,0)))
         Nj = W.shape[0]
-        envelope = generate_envelope(Nj, data.shape[-1], support=.5)
+        envelope = generate_envelope(Nj, data.shape[-1], support=.25, type='sphere')
         print('increased Nj to %u'%Nj)
 
     [a.clear() for a in ax]
@@ -90,3 +91,5 @@ ax[2].imshow(Plk, aspect='auto')
 ax[0].set_title('simulated theta and phi')
 ax[1].set_title('reconstructed |Pjk|')
 ax[2].set_title('reconstructed |Plk|')
+
+np.savez(filename + '_assembled.npz', data=W)
