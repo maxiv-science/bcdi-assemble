@@ -67,13 +67,13 @@ def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=True):
     if force_continuity==True:
         kmax = np.argmax(np.sum(data, axis=(1,2)))
         com = np.argmax(np.sum(logPjlk, axis=1)[:, kmax])
-        logPjlk[:, :, kmax] += log_gauss(com, np.arange(Nj), Nj/4)[:, None]
+        logPjlk[:, :, kmax] += log_gauss(com, np.arange(Nj), 6)[:, None]
         for k in range(kmax+1, Nk):
             bias = np.argmax(np.sum(logPjlk, axis=1)[:, k-1])
-            logPjlk[:, :, k] += log_gauss(bias, np.arange(Nj), Nj/4)[:, None]
+            logPjlk[:, :, k] += log_gauss(bias, np.arange(Nj), 6)[:, None]
         for k in range(kmax-1, -1, -1):
             bias = np.argmax(np.sum(logPjlk, axis=1)[:, k+1])
-            logPjlk[:, :, k] += log_gauss(bias, np.arange(Nj), Nj/4)[:, None]
+            logPjlk[:, :, k] += log_gauss(bias, np.arange(Nj), 6)[:, None]
             
     # pragmatic pre-normalization to avoid overflow
     t3 = time.time()
