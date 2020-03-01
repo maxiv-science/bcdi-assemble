@@ -49,7 +49,8 @@ fudge = 5e-5
 for i in range(60):
     print(i)
 
-    W, Pjlk = M(W, data, Nl=Nl, ml=ml, beta=fudge, force_continuity=True)
+    W, Pjlk, timing = M(W, data, Nl=Nl, ml=ml, beta=fudge, force_continuity=True)
+    [print(k, '%.3f'%v) for k, v in timing.items()]
     W, error = C(W, envelope)
     errors.append(error)
 

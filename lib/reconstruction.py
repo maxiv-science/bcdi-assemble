@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 def first_axis_com(a):
     """
@@ -35,11 +36,13 @@ def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=True):
     Performs the M update rule, Loh et al PRE 2009 eqns 8-11, with the
     addition of the fudge factor from Ayyer et al J Appl Cryst 2016.
     """
+    t0 = time.time()
     Nj = W.shape[0]
     Nk = data.shape[0]
     logRjlk = np.empty((Nj, Nl, Nk), dtype=np.float64)
 
     # first, calculate the probabilities Pjlk based on the current model
+    t1 = time.time()
     for j in range(Nj):
         for k in range(Nk):
             for l in range(Nl):
@@ -48,6 +51,7 @@ def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=True):
     logPjlk = beta * logRjlk
 
     # optionally force Pjk to describe something continuous
+    t2 = time.time()
     if force_continuity==True:
         kmax = np.argmax(np.sum(data, axis=(1,2)))
         com = np.argmax(np.sum(logPjlk, axis=1)[:, kmax])
@@ -60,6 +64,7 @@ def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=True):
             logPjlk[:, :, k] += log_gauss(bias, np.arange(Nj), Nj/4)[:, None]
             
     # pragmatic pre-normalization to avoid overflow
+    t3 = time.time()
     logPjlk -= np.max(logPjlk, axis=(0,1))
     Pjlk = np.exp(logPjlk)
     Pjlk /= np.sum(Pjlk, axis=(0,1))
@@ -67,7 +72,11 @@ def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=True):
     # then carry out the likelihood maximization (M) step
     W = build_model(data, Pjlk)
 
-    return W, Pjlk
+    t4 = time.time()
+    timing = {'total': t4-t0, 'Pjlk calculation': t2-t1,
+              'continuity enforcement': t3-t2,
+              'likelihood maximization': t4-t3}
+    return W, Pjlk, timing
 
 def C(W, envelope):
     ft = np.fft.fftn(W)
