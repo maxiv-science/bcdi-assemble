@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 plt.ion()
+import h5py
 
 from lib.reconstruction import M, C
 from lib.reconstruction import generate_envelope, generate_initial, first_axis_com
@@ -46,6 +47,7 @@ W = generate_initial(data, Nj)
 fig, ax = plt.subplots(ncols=5, figsize=(12,3))
 errors = []
 fudge = 5e-5
+ofp = h5py.File('output.h5', 'w')
 for i in range(60):
     print(i)
 
@@ -53,6 +55,9 @@ for i in range(60):
     [print(k, '%.3f'%v) for k, v in timing.items()]
     W, error = C(W, envelope)
     errors.append(error)
+    ofp.create_group('entry%02u'%i)
+    ofp['entry%02u/W'%i] = W
+    ofp['entry%02u/Pjlk'%i] = Pjlk
 
     # expand the resolution now and then
     if i and (Nj<40) and (i % 10) == 0:
@@ -76,6 +81,8 @@ for i in range(60):
     ax[3].set_title('|Plk|')
     ax[4].set_title('Error')
     plt.pause(.01)
+
+ofp.close()
 
 ### plot the result and compare to the simulated truth
 fix, ax = plt.subplots(nrows=3, sharex=True, figsize=(4,4))
