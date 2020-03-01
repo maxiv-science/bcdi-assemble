@@ -1,6 +1,9 @@
 import numpy as np
 import time
 
+import multiprocessing
+from functools import partial
+
 def first_axis_com(a):
     """
     Calculates the center of mass of an array along each column.
@@ -31,6 +34,17 @@ def build_model(data, Pjlk, ml=1):
         W[j][:] = W[j] / (np.sum(Pjlk[j, :, :]) + 1e-20)
     return W
 
+def inner(j, W, data, ml, Nl, Nk):
+    """
+    Broken out inner loops of the Rjlk calculation, for paralllelization.
+    """
+    logRjlk = np.empty((Nl, Nk), dtype=np.float64)
+    for k in range(Nk):
+        for l in range(Nl):
+            rolled = np.roll(data[k], ml*(l-Nl//2), axis=-1)
+            logRjlk[l, k] = np.sum(rolled * np.log(W[j] + 1e-20) - W[j])
+    return logRjlk
+
 def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=True):
     """
     Performs the M update rule, Loh et al PRE 2009 eqns 8-11, with the
@@ -39,15 +53,13 @@ def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=True):
     t0 = time.time()
     Nj = W.shape[0]
     Nk = data.shape[0]
-    logRjlk = np.empty((Nj, Nl, Nk), dtype=np.float64)
 
     # first, calculate the probabilities Pjlk based on the current model
     t1 = time.time()
-    for j in range(Nj):
-        for k in range(Nk):
-            for l in range(Nl):
-                rolled = np.roll(data[k], ml*(l-Nl//2), axis=-1)
-                logRjlk[j, l, k] = np.sum(rolled * np.log(W[j] + 1e-20) - W[j])
+    pool = multiprocessing.Pool(4)
+    inner_ = partial(inner, W=W, data=data, ml=ml, Nl=Nl, Nk=Nk)
+    logRjlk = np.array(pool.map(inner_, range(Nj)))
+    pool.terminate()
     logPjlk = beta * logRjlk
 
     # optionally force Pjk to describe something continuous
