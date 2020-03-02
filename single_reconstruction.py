@@ -8,11 +8,12 @@ from lib.reconstruction import generate_envelope, generate_initial, first_axis_c
 
 ### the number of theta bins of the model
 Nj = 20
-Nl = 36
+Nl = 20
 ml = 1
 
 ### load and plot generated data
-filename = 'data/ten_simulations_9.npz'
+#filename = 'data/ten_simulations_9.npz'
+filename = 'data/strained_test_data.npz'
 data = np.load(filename)['frames']
 o = np.load(filename)['offsets']
 ax = plt.gca()
@@ -31,13 +32,13 @@ ax[0].set_title('frames seen from above')
 ax[1].set_title('a central frame')
 
 ### first hack the data to align the centers of mass of each frame
-#rolls = np.zeros(len(data), dtype=np.int)
-#ii, jj = np.indices(data[0].shape)
-#for k in range(len(data)):
-#    com = np.sum(jj * data[k]) / np.sum(data[k])
-#    shift = int(np.round(data.shape[-1]//2 - com))
-#    data[k] = np.roll(data[k], shift, axis=-1)
-#    rolls[k] = shift
+rolls = np.zeros(len(data), dtype=np.int)
+ii, jj = np.indices(data[0].shape)
+for k in range(len(data)):
+    com = np.sum(jj * data[k]) / np.sum(data[k])
+    shift = int(np.round(data.shape[-1]//2 - com))
+    data[k] = np.roll(data[k], shift, axis=-1)
+    rolls[k] = shift
 
 ### build the the autocorrelation envelope and the initial model
 envelope = generate_envelope(Nj, data.shape[-1], support=.25, type='sphere')
@@ -60,8 +61,8 @@ for i in range(60):
     ofp['entry%02u/Pjlk'%i] = Pjlk
 
     # expand the resolution now and then
-    if i and (Nj<40) and (i % 10) == 0:
-        fudge *= np.sqrt(2)
+    if i and (Nj<50) and (i % 5) == 0:
+        fudge *= 2**(1/2)
         W = np.pad(W, ((2,2),(0,0),(0,0)))
         Nj = W.shape[0]
         envelope = generate_envelope(Nj, data.shape[-1], support=.25, type='sphere')

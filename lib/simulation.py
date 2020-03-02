@@ -15,13 +15,18 @@ try:
 except AttributeError:
     raise Exception('Use 3dBPP ptypy version!')
 
-def simulate_octahedron(offsets, rolls, photons_in_central_frame=1e6, plot=True):
+def simulate_octahedron(offsets, rolls, photons_in_central_frame=1e6, plot=True,
+                        strain_type=None, strain_size=.25):
     """
     Simulate a particle rotating through its rocking curve in a complicated
     way, as well as diffusion along the powder ring.
 
     Defines a truncated-octahedral particle, rotates it, and applies the
     projection operator before doing the 2D FT.
+
+    strain_type: optionally add a phase pattern to the particle, can be
+                 'checks' or 'surface'.
+    strain_size: size of the phase structures (radians)
     """
 
     ### define the physics
@@ -61,6 +66,17 @@ def simulate_octahedron(offsets, rolls, photons_in_central_frame=1e6, plot=True)
     o.rotate('z', angle)
     xx, zz, yy = g.transformed_grid(S, input_space='real', input_system='natural')
     v.data[:] = o.contains((xx, -yy, zz))
+
+    ### optionally add strain
+    if strain_type == 'checks':
+        v.data[np.where(xx[0] * yy[0] * zz[0] > 0)] *= np.exp(1j * strain_size)
+    elif strain_type == 'surface':
+        o.scale(.8)
+        v.data[np.where(1 - o.contains((xx[0], -yy[0], zz[0])))] *= np.exp(1j * strain_size)
+    if strain_type:
+        fig, ax = plt.subplots(ncols=2, sharex=True, sharey=True)
+        ax[0].imshow(np.abs(v.data[16]))
+        ax[1].imshow(np.angle(v.data[16]))
 
     ### calculate
     data = []
