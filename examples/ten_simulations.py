@@ -3,7 +3,7 @@ Simulates a particle rocking through 10 different rocking curves,
 with and without rolling.
 """
 
-from diffassemble import simulate_octahedron
+from diffassemble.simulation import simulate_octahedron
 import numpy as np
 import matplotlib.pyplot as plt
 plt.ion()

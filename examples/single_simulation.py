@@ -2,7 +2,7 @@
 Simulates a particle rocking through an N-shaped and noisy curve.
 """
 
-from diffassemble import simulate_octahedron
+from diffassemble.simulation import simulate_octahedron
 import numpy as np
 
 # non-monotonous N-shaped rocking curve
