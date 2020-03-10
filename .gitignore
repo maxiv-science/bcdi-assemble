@@ -1,3 +1,7 @@
 __pycache__
 *.pyc
-
+*assembled.npz
+*progress.h5
+*egg-info
+dist
+build

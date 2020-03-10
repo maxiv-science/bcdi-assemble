@@ -3,7 +3,7 @@ Simulates a particle rocking through 10 different rocking curves,
 with and without rolling.
 """
 
-from lib.simulation import simulate_octahedron
+from diffassemble import simulate_octahedron
 import numpy as np
 import matplotlib.pyplot as plt
 plt.ion()
@@ -70,4 +70,4 @@ for i, traj in enumerate(trajectories):
 for i, traj in enumerate(trajectories):
     frames = simulate_octahedron(offsets=traj['theta'], rolls=traj['phi'],
         photons_in_central_frame=1e6, plot=False)
-    np.savez_compressed('data/ten_simulations_%u.npz'%i, offsets=traj['theta'], rolls=traj['phi'], frames=frames)
+    np.savez_compressed('../data/ten_simulations_%u.npz'%i, offsets=traj['theta'], rolls=traj['phi'], frames=frames)

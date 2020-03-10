@@ -2,7 +2,7 @@
 Simulates a particle rocking through an N-shaped and noisy curve.
 """
 
-from lib.simulation import simulate_octahedron
+from diffassemble import simulate_octahedron
 import numpy as np
 
 # non-monotonous N-shaped rocking curve
@@ -16,4 +16,4 @@ theta = np.concatenate((
 phi = np.zeros_like(theta)
 
 frames = simulate_octahedron(offsets=theta, rolls=phi)
-np.savez_compressed('data/test_data.npz', offsets=theta, rolls=phi, frames=frames)
+np.savez_compressed('../data/test_data.npz', offsets=theta, rolls=phi, frames=frames)
