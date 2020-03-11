@@ -6,7 +6,7 @@ from .utils import C, M, build_model, generate_initial, generate_envelope
 def assemble(data, Nj=20, Nl=20, ml=1, n_iter=100,
              Nj_max=50, increase_Nj_every=5, fudge=5e-5, fudge_max=1,
              increase_fudge_every=10, increase_fudge_by=2**(1/2),
-             pre_align_phi=True, support=.25):
+             pre_align_phi=True, support=.25, nproc=4):
     """
     Generator which performs the diffraction volume assembly and all its
     parameter logistics, and yields on every iteration so you can plot
@@ -33,7 +33,7 @@ def assemble(data, Nj=20, Nl=20, ml=1, n_iter=100,
         for i in range(n_iter):
             print(i)
 
-            W, Pjlk, timing = M(W, data, Nl=Nl, ml=ml, beta=fudge, force_continuity=True)
+            W, Pjlk, timing = M(W, data, Nl=Nl, ml=ml, beta=fudge, force_continuity=True, nproc=nproc)
             [print(k, '%.3f'%v) for k, v in timing.items()]
             W, error = C(W, envelope)
             errors.append(error)

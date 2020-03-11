@@ -47,7 +47,7 @@ def inner(j, W, data, ml, Nl, Nk):
             logRjlk[l, k] = np.sum(rolled * np.log(W[j] + 1e-20) - W[j])
     return logRjlk
 
-def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=True):
+def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=True, nproc=4):
     """
     Performs the M update rule, Loh et al PRE 2009 eqns 8-11, with the
     addition of the fudge factor from Ayyer et al J Appl Cryst 2016.
@@ -58,7 +58,7 @@ def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=True):
 
     # first, calculate the probabilities Pjlk based on the current model
     t1 = time.time()
-    pool = multiprocessing.Pool(4)
+    pool = multiprocessing.Pool(nproc)
     inner_ = partial(inner, W=W, data=data, ml=ml, Nl=Nl, Nk=Nk)
     logRjlk = np.array(pool.map(inner_, range(Nj)))
     pool.terminate()
