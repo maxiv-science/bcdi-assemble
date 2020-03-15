@@ -29,11 +29,14 @@ def build_model(data, Pjlk, ml=1):
     W = np.zeros((Nj, Npix, Npix), dtype=np.float64)
     for j in range(Nj):
         W[j][:] = 0.0
+        norm = np.zeros_like(W[j])
         for l in range(Nl):
             for k in range(Nk):
                 rolled = np.roll(data[k], ml*(l-Nl//2), axis=-1)
-                W[j][:] = W[j] + Pjlk[j, l, k] * rolled
-        W[j][:] = W[j] / (np.sum(Pjlk[j, :, :]) + 1e-20)
+                mask = (rolled >= 0)
+                norm[:] += mask * Pjlk[j, l, k]
+                W[j][:] = W[j] + mask * Pjlk[j, l, k] * rolled
+        W[j][:] = W[j] / (norm + 1e-20)
     return W
 
 def inner(j, W, data, ml, Nl, Nk):
@@ -44,7 +47,8 @@ def inner(j, W, data, ml, Nl, Nk):
     for k in range(Nk):
         for l in range(Nl):
             rolled = np.roll(data[k], ml*(l-Nl//2), axis=-1)
-            logRjlk[l, k] = np.sum(rolled * np.log(W[j] + 1e-20) - W[j])
+            mask = (rolled >= 0)
+            logRjlk[l, k] = np.sum(mask * (rolled * np.log(W[j] + 1e-20) - W[j]))
     return logRjlk
 
 def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=True, nproc=4):
