@@ -29,7 +29,8 @@ ax[1].set_title('a central frame')
 # then do the assembly, plotting on each iteration
 fig, ax = plt.subplots(ncols=5, figsize=(12,3))
 plt.pause(.1)
-for output in assemble(data, Nl=5, n_iter=6):
+for output in assemble(data, Nj=25, Nl=10, n_iter=100, roll_center=None,
+                       pre_align_phi=True, nproc=4):
     W, Pjlk, errors = output
     Nj = Pjlk.shape[0]
     [a.clear() for a in ax]

@@ -1,12 +1,12 @@
 import numpy as np
 import h5py
 
-from .utils import C, M, build_model, generate_initial, generate_envelope
+from .utils import C, M, generate_initial, generate_envelope
 
 def assemble(data, Nj=20, Nl=20, ml=1, n_iter=100,
              Nj_max=50, increase_Nj_every=5, fudge=5e-5, fudge_max=1,
              increase_fudge_every=10, increase_fudge_by=2**(1/2),
-             pre_align_phi=True, support=.25, nproc=4):
+             pre_align_phi=True, support=.25, nproc=4, roll_center=None):
     """
     Generator which performs the diffraction volume assembly and all its
     parameter logistics, and yields on every iteration so you can plot
@@ -16,6 +16,8 @@ def assemble(data, Nj=20, Nl=20, ml=1, n_iter=100,
     ### first hack the data to align the centers of mass of each frame
     rolls = np.zeros(len(data), dtype=np.int)
     if pre_align_phi:
+        if roll_center is not None:
+            raise NotImplementedError('Pre-aligning phi is only implemented for simple rolls without roll_center')
         ii, jj = np.indices(data[0].shape)
         for k in range(len(data)):
             com = np.sum(jj * data[k]) / np.sum(data[k])
@@ -33,7 +35,9 @@ def assemble(data, Nj=20, Nl=20, ml=1, n_iter=100,
         for i in range(n_iter):
             print(i)
 
-            W, Pjlk, timing = M(W, data, Nl=Nl, ml=ml, beta=fudge, force_continuity=True, nproc=nproc)
+            W, Pjlk, timing = M(W, data, Nl=Nl, ml=ml, beta=fudge,
+                                force_continuity=True, nproc=nproc,
+                                roll_center=roll_center)
             [print(k, '%.3f'%v) for k, v in timing.items()]
             W, error = C(W, envelope)
             errors.append(error)

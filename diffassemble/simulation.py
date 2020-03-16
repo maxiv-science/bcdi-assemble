@@ -3,6 +3,7 @@ import nmutils
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors
+from .utils import roll
 plt.ion()
 
 try:
@@ -16,7 +17,7 @@ except AttributeError:
     raise Exception('Use 3dBPP ptypy version!')
 
 def simulate_octahedron(offsets, rolls, photons_in_central_frame=1e6, plot=True,
-                        strain_type=None, strain_size=.25):
+                        strain_type=None, strain_size=.25, roll_center=None):
     """
     Simulate a particle rotating through its rocking curve in a complicated
     way, as well as diffusion along the powder ring.
@@ -84,7 +85,7 @@ def simulate_octahedron(offsets, rolls, photons_in_central_frame=1e6, plot=True,
         g.bragg_offset = offset
 
         I = np.abs(g.propagator.fw(v.data))**2
-        I = np.roll(I, rolls[ioffset], axis=1)
+        I = roll(I, rolls[ioffset], roll_center)
         exit = g.overlap2exit(v.data)
         data.append({'offset': offset,
                      'angle': angle,
@@ -98,9 +99,11 @@ def simulate_octahedron(offsets, rolls, photons_in_central_frame=1e6, plot=True,
     global_max = frames[central].max() * photons_per_intensity
     noisy_frames = []
     for i, frame in enumerate(frames):
-        noisy_frames.append(
-            nmutils.utils.noisyImage(frame, photonsTotal=photons_per_intensity*frame.sum()).astype(np.uint32)
-            )
+        mask = frame < 0
+        frame[mask] = 0
+        noisy = nmutils.utils.noisyImage(frame, photonsTotal=photons_per_intensity*frame.sum())
+        noisy[mask] = -1
+        noisy_frames.append(noisy)
 
     ### plot if requested
     if plot:

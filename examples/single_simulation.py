@@ -13,7 +13,7 @@ theta = np.concatenate((
    )) + np.random.rand(80)*.05
 
 # optionally add variation on the phi angle too!
-phi = np.zeros_like(theta)
+phi = 10 * np.sin(np.arange(len(theta)) * np.pi / 10)
 
-frames = simulate_octahedron(offsets=theta, rolls=phi)
+frames = simulate_octahedron(offsets=theta, rolls=phi, roll_center=[100,64])
 np.savez_compressed('../data/test_data.npz', offsets=theta, rolls=phi, frames=frames)
