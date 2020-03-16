@@ -25,15 +25,22 @@ def roll(im, pixels, roll_center=None):
     Roll the image, either by just rolling the array, or by rotating
     around a center.
     """
-    if not roll_center:
+    if roll_center is None:
         rolled = np.roll(im, pixels, axis=-1)
     else:
+        # mask out masked pixels to avoid interpolation weirdness
+        im = im.astype(float)
+        im[np.where(im < 0)] = np.nan
+
         # approximate number of pixels per degree
         dist = np.sqrt(np.sum((np.array(roll_center) - np.array(im.shape)/2)**2))
         angle = pixels / dist / np.pi * 180
         rolled = skimage.transform.rotate(im, angle=angle,
                     center=roll_center[::-1], # rotate takes (col, row)
                     mode='constant', cval=-1)
+
+        # restore the normal mask
+        rolled[np.where(np.isnan(rolled))] = -1
     return rolled
 
 def build_model(data, Pjlk, ml=1, roll_center=None):
