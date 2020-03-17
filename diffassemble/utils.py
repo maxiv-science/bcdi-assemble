@@ -57,7 +57,7 @@ def build_model(data, Pjlk, ml=1, roll_center=None):
         norm = np.zeros_like(W[j])
         for l in range(Nl):
             for k in range(Nk):
-                if Pjlk[j, l, k] < 1e-3:
+                if Pjlk[j, l, k] < 1e-9:
                     continue
                 rolled = roll(data[k], ml*(l-Nl//2), roll_center)
                 mask = (rolled >= 0)
