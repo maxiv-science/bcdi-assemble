@@ -35,9 +35,10 @@ def roll(im, pixels, roll_center=None):
         # approximate number of pixels per degree
         dist = np.sqrt(np.sum((np.array(roll_center) - np.array(im.shape)/2)**2))
         angle = pixels / dist / np.pi * 180
-        rolled = skimage.transform.rotate(im, angle=angle,
+        rolled = skimage.transform.rotate(im, angle=-angle,
                     center=roll_center[::-1], # rotate takes (col, row)
-                    mode='constant', cval=-1)
+                    mode='reflect')
+#                    mode='constant', cval=-1)
 
         # restore the normal mask
         rolled[np.where(np.isnan(rolled))] = -1

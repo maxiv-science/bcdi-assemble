@@ -1,7 +1,7 @@
 import numpy as np
 import h5py
 
-from .utils import C, M, generate_initial, generate_envelope
+from .utils import C, M, generate_initial, generate_envelope, roll
 
 def assemble(data, Nj=20, Nl=20, ml=1, n_iter=100,
              Nj_max=50, increase_Nj_every=5, fudge=5e-5, fudge_max=1,
@@ -15,15 +15,16 @@ def assemble(data, Nj=20, Nl=20, ml=1, n_iter=100,
 
     ### first hack the data to align the centers of mass of each frame
     rolls = np.zeros(len(data), dtype=np.int)
+    np.savez('pre_align_before.npz', data=data)
     if pre_align_phi:
-        if roll_center is not None:
-            raise NotImplementedError('Pre-aligning phi is only implemented for simple rolls without roll_center')
         ii, jj = np.indices(data[0].shape)
+        mask = (data[0] >= 0)
         for k in range(len(data)):
-            com = np.sum(jj * data[k]) / np.sum(data[k])
+            com = np.sum(jj * data[k] * mask) / np.sum(data[k] * mask)
             shift = int(np.round(data.shape[-1]//2 - com))
-            data[k] = np.roll(data[k], shift, axis=-1)
+            data[k] = roll(data[k], shift, roll_center)
             rolls[k] = shift
+    np.savez('pre_align_after.npz', data=data)
 
     ### build the the autocorrelation envelope and the initial model
     envelope = generate_envelope(Nj, data.shape[-1], support=support, type='sphere')
