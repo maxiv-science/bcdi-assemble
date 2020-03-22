@@ -44,29 +44,33 @@ def roll(im, pixels, roll_center=None):
         rolled[np.where(np.isnan(rolled))] = -1
     return rolled
 
-def build_model(data, Pjlk, ml=1, roll_center=None):
+def inner_Mbuild(j, data, ml, roll_center, Pjlk):
+    Npix = data.shape[-1]
+    Nj, Nl, Nk = Pjlk.shape
+    Wj = np.zeros((Npix, Npix), dtype=np.float64)
+    norm = np.zeros_like(Wj)
+    for l in range(Nl):
+        for k in range(Nk):
+            rolled = roll(data[k], ml*(l-Nl//2), roll_center)
+            mask = (rolled >= 0)
+            norm[:] += mask * Pjlk[j, l, k]
+            Wj[:] = Wj + mask * Pjlk[j, l, k] * rolled
+    Wj[:] = Wj / (norm + 1e-20)
+    return Wj
+
+def build_model(data, Pjlk, ml=1, roll_center=None, nproc=4):
     """
     Returns the maximum likelihood model W[j] based on the data[k] and
     probability matrix P[j,k]. This is Loh et al PRE 2009 eqn 11.
     """
-    Nj, Nl, Nk = Pjlk.shape
-    Npix = data.shape[-1]
-    W = np.zeros((Nj, Npix, Npix), dtype=np.float64)
-    for j in range(Nj):
-        W[j][:] = 0.0
-        norm = np.zeros_like(W[j])
-        for l in range(Nl):
-            for k in range(Nk):
-                if Pjlk[j, l, k] < 1e-9:
-                    continue
-                rolled = roll(data[k], ml*(l-Nl//2), roll_center)
-                mask = (rolled >= 0)
-                norm[:] += mask * Pjlk[j, l, k]
-                W[j][:] = W[j] + mask * Pjlk[j, l, k] * rolled
-        W[j][:] = W[j] / (norm + 1e-20)
+    pool = multiprocessing.Pool(nproc)
+    inner_ = partial(inner_Mbuild, data=data, ml=ml,
+                     roll_center=roll_center, Pjlk=Pjlk)
+    W = np.array(pool.map(inner_, range(Pjlk.shape[0])))
+    pool.terminate()
     return W
 
-def inner(j, W, data, ml, Nl, Nk, roll_center):
+def inner_Mcalc(j, W, data, ml, Nl, Nk, roll_center):
     """
     Broken out inner loops of the Rjlk calculation, for paralllelization.
     """
@@ -90,7 +94,7 @@ def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=True, nproc=4, roll_center
     # first, calculate the probabilities Pjlk based on the current model
     t1 = time.time()
     pool = multiprocessing.Pool(nproc)
-    inner_ = partial(inner, W=W, data=data, ml=ml, Nl=Nl, Nk=Nk,
+    inner_ = partial(inner_Mcalc, W=W, data=data, ml=ml, Nl=Nl, Nk=Nk,
                      roll_center=roll_center)
     logRjlk = np.array(pool.map(inner_, range(Nj)))
     pool.terminate()
@@ -116,7 +120,7 @@ def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=True, nproc=4, roll_center
     Pjlk /= np.sum(Pjlk, axis=(0,1))
     
     # then carry out the likelihood maximization (M) step
-    W = build_model(data, Pjlk, ml=ml, roll_center=roll_center)
+    W = build_model(data, Pjlk, ml=ml, roll_center=roll_center, nproc=nproc)
 
     t4 = time.time()
     timing = {'total': t4-t0, 'Pjlk calculation': t2-t1,
