@@ -21,7 +21,11 @@ def assemble(data, Nj=20, Nl=20, ml=1, n_iter=100,
         mask = (data[0] >= 0)
         for k in range(len(data)):
             com = np.sum(jj * data[k] * mask) / np.sum(data[k] * mask)
-            shift = int(np.round(data.shape[-1]//2 - com))
+            try:
+                shift = int(np.round(data.shape[-1]//2 - com))
+            except ValueError:
+                print("not pre-aligning frame %d"%k)
+                shift = 0
             data[k] = roll(data[k], shift, roll_center)
             rolls[k] = shift
     np.savez('pre_align_after.npz', data=data)
