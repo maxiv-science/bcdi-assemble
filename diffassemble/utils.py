@@ -138,7 +138,12 @@ def generate_envelope(N, shape, support=0.5, type='box'):
     # the actual envelope - need to figure out the pixel sizes of the autocorrelation...
     envelope = np.ones((N, shape, shape), dtype=int)
     n1, n2 = (int(np.floor(s * (support/2))) for s in (N, shape))
-    if type == 'box':
+    if type == 'none':
+        pass
+    elif type == '1d':
+        print('1d, baby!')
+        envelope[n1:-n1] = 0
+    elif type == 'box':
         envelope[n1:-n1] = 0
         envelope[:, n2:-n2] = 0
         envelope[:, :, n2:-n2] = 0

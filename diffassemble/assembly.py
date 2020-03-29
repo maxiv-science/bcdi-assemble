@@ -6,7 +6,8 @@ from .utils import C, M, generate_initial, generate_envelope, roll
 def assemble(data, Nj=20, Nl=20, ml=1, n_iter=100,
              Nj_max=50, increase_Nj_every=5, fudge=5e-5, fudge_max=1,
              increase_fudge_every=10, increase_fudge_by=2**(1/2),
-             pre_align_phi=True, support=.25, nproc=4, roll_center=None):
+             pre_align_phi=True, support=.25, nproc=4, roll_center=None,
+             compression_type='sphere'):
     """
     Generator which performs the diffraction volume assembly and all its
     parameter logistics, and yields on every iteration so you can plot
@@ -31,7 +32,8 @@ def assemble(data, Nj=20, Nl=20, ml=1, n_iter=100,
     np.savez('pre_align_after.npz', data=data)
 
     ### build the the autocorrelation envelope and the initial model
-    envelope = generate_envelope(Nj, data.shape[-1], support=support, type='sphere')
+    envelope = generate_envelope(Nj, data.shape[-1], support=support,
+                                 type=compression_type)
     W = generate_initial(data, Nj)
 
     ### iteration time!
@@ -54,7 +56,8 @@ def assemble(data, Nj=20, Nl=20, ml=1, n_iter=100,
             if i and (Nj<Nj_max) and (i % increase_Nj_every) == 0:
                 W = np.pad(W, ((2,2),(0,0),(0,0)))
                 Nj = W.shape[0]
-                envelope = generate_envelope(Nj, data.shape[-1], support=support, type='sphere')
+                envelope = generate_envelope(Nj, data.shape[-1], support=support,
+                                             type=compression_type)
                 print('increased Nj to %u'%Nj)
 
             if i and (fudge<fudge_max) and (i % increase_fudge_every) == 0:
