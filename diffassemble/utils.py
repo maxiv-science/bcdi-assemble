@@ -134,25 +134,62 @@ def C(W, envelope):
     W = np.abs(np.fft.ifftn(ft * envelope))
     return W, error
 
-def generate_envelope(N, shape, support=0.5, type='box'):
-    # the actual envelope - need to figure out the pixel sizes of the autocorrelation...
+def generate_envelope(N, shape, support=0.25, Q=None, theta=0.0, Dmax=None):
+    """
+    Generates the envelope with which to constrain the autocorrelation
+    function, effectively placing a low-pass filter on the assembled
+    intensity.
+
+    N:          the number of rocking positions (int)
+    shape:      the linear dimension of each image (int)
+    support:    fraction of the autocorrelation grid to keep,
+                along each dimension (q3, q1, q2) where the first (q3)
+                corresponds to Nj. This is directly applied in the
+                natural coordinate system, so theta, Dmax and Q are
+                ignored. Can also be a float.
+    Q:          The q-ranges (Q3, Q1, Q2) spanned by q3, q1, and q2.
+    Dmax:       The maximum extent of the particle described along each
+                orthogonal real-space dimension (x, y, z), where the
+                first (x) corresponds to the third dimension. Can also
+                be a float. See citation below.
+    theta:      The Bragg angle in degrees.
+    """
     envelope = np.ones((N, shape, shape), dtype=int)
-    n1, n2 = (int(np.floor(s * (support/2))) for s in (N, shape))
-    if type == 'none':
-        pass
-    elif type == '1d':
-        print('1d, baby!')
-        envelope[n1:-n1] = 0
-    elif type == 'box':
-        envelope[n1:-n1] = 0
-        envelope[:, n2:-n2] = 0
+    if Q is None:
+        # no physics, just keep a fraction of the autocorrelation along
+        # each natural sampling dimension.
+        if np.isscalar(support):
+            support = (support,) * 3
+        n1 = int(np.floor(shape * (support[1] / 2)))
+        n2 = int(np.floor(shape * (support[2] / 2)))
+        n3 = int(np.floor(N * (support[0] / 2)))
+        envelope[n3:-n3] = 0
+        envelope[:, n1:-n1] = 0
         envelope[:, :, n2:-n2] = 0
-    elif type == 'sphere':
-        inds = np.indices(envelope.shape)
-        center = np.array(envelope.shape) // 2
-        ri, rj, rk = inds - center.reshape((-1, 1, 1, 1))
-        r = ri**2 / n1**2 + rj**2 / n2**2 + rk**2 / n2**2
-        envelope[np.where(r > 1)] = 0
+    else:
+        # take the geometry into account and confine the autocorrelation
+        # in orthogonal xyz real space. See this paper for details:
+        # Berenguer et al, PRB 2013 10.1103/PhysRevB.88.144101
+        if np.isscalar(Q):
+            Q = (Q,) * 3
+        Q3, Q1, Q2 = Q
+        N3, N1, N2 = N, shape, shape
+        dq1, dq2, dq3 = np.array((Q1, Q2, Q3)) / np.array((N1, N2, N3))
+        costheta = np.cos(theta / 180. * np.pi)
+        sintheta = np.sin(theta / 180. * np.pi)
+        dr1 = 2 * np.pi / (N1 * dq1 * costheta)
+        dr2 = 2 * np.pi / (N2 * dq2)
+        dr3 = 2 * np.pi / (N3 * dq3 * costheta)
+        r3, r1, r2 = (np.indices(envelope.shape))
+        r1 = (r1 - N1 / 2) * dr1
+        r2 = (r2 - N2 / 2) * dr2
+        r3 = (r3 - N3 / 2) * dr3
+        x = r3 * costheta
+        y = r2
+        z = r1 + r3 * sintheta
+        envelope[np.where((np.abs(x) > Dmax[0]) |
+                          (np.abs(y) > Dmax[1]) |
+                          (np.abs(z) > Dmax[2]))] = 0
         envelope = np.roll(envelope, (N//2, shape//2, shape//2), axis=(0,1,2))
     return envelope
 
