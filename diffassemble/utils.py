@@ -205,3 +205,43 @@ def generate_initial(data, Nj, sigma=1.):
     Pjk /= Pjk.sum(axis=0)
     Pjlk = Pjk.reshape((Nj, 1, Nk))
     return build_model(data, Pjlk) + 1e-20
+
+def pre_align_rolls(data, roll_center):
+    rolls = np.zeros(len(data), dtype=np.int)
+    ii, jj = np.indices(data[0].shape)
+    mask = (data[0] >= 0)
+    for k in range(len(data)):
+        com = np.sum(jj * data[k] * mask) / np.sum(data[k] * mask)
+        try:
+            shift = int(np.round(data.shape[-1]//2 - com))
+        except ValueError:
+            print("not pre-aligning frame %d"%k)
+            shift = 0
+        data[k] = roll(data[k], shift, roll_center)
+        rolls[k] = shift
+    return data, rolls
+
+class ProgressPlot(object):
+    def __init__(self):
+        plt.ion()
+        self.fig, self.ax = plt.subplots(ncols=5, figsize=(12,3))
+        plt.pause(.1)
+
+    def update(self, W, Pjlk, errors):
+        ax = self.ax
+        Nj = Pjlk.shape[0]
+        [a.clear() for a in ax]
+        ax[0].imshow(np.abs(W[:,64,:]), vmax=np.abs(W[:,64,:]).max()/10)
+        ax[1].imshow(np.abs(W[Nj//2,:,:]), vmax=np.abs(W[Nj//2]).max()/10)
+        Pjk = np.sum(Pjlk, axis=1)
+        ax[2].imshow(np.abs(Pjk), vmax=np.abs(Pjk).max()/10)
+        Plk = np.sum(Pjlk, axis=0)
+        ax[3].imshow(np.abs(Plk))#, vmax=np.abs(Plk).max()/10)
+        ax[4].plot(errors)
+        ax[0].set_title('model from above')
+        ax[1].set_title('central model slice')
+        ax[2].set_title('|Pjk|')
+        ax[3].set_title('|Plk|')
+        ax[4].set_title('Error')
+        plt.draw()
+        plt.pause(.01)
