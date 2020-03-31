@@ -1,6 +1,7 @@
 import numpy as np
 import time
 import matplotlib.pyplot as plt
+from scipy.ndimage import map_coordinates
 import h5py
 import skimage
 
@@ -245,3 +246,55 @@ class ProgressPlot(object):
         ax[4].set_title('Error')
         plt.draw()
         plt.pause(.01)
+
+def mean_spread(a):
+    inds = np.indices(a.shape)
+    com = np.sum(inds * a, axis=(1,2,3)) / np.sum(a)
+    dist = np.sum((inds - com.reshape((3,1,1,1)))**2, axis=0)**(1/2)
+    spread = np.sum(a * dist) / np.sum(a)
+    return spread
+
+def rectify(W, Q, theta, find_order=True):
+    """
+    Resamples the model W on an orthogonal grid.
+    """
+    W1, Qnew = _rectify(W, Q, theta)
+    W2, Qnew = _rectify(np.flip(W, axis=0), Q, theta)
+    if not find_order or (mean_spread(W1) < mean_spread(W2)):
+        return W1, Qnew
+    else:
+        return W2, Qnew
+
+def _rectify(W, Q, theta):
+    """
+    Takes the model W, defined over the ranges Q, corresponding to the
+    Bragg angle theta, and interpolates it on a regular, orthogonal grid.
+
+    The model W is indexed as:
+        q3 (low to high)
+        q1 (high to low)
+        q2 (low to high)
+
+    Returns W, Qnew (where the latter is the new q-range).
+    """
+    Q3, Q1, Q2 = Q
+    dq2 = Q1 / W.shape[-1]
+    dq1 = -dq2 # image indices run q1 (high to low), q2 (low to high)
+    dq3 = Q3 / W.shape[0]
+    # make up the existing natural q grid
+    qbase = np.indices(W.shape)
+    qbase = qbase - (np.array(W.shape).reshape((3,1,1,1)) - 1) / 2
+    q3_old, q1_old, q2_old = qbase * np.array((dq3, dq1, dq2)).reshape((3,1,1,1))
+    # define a new q(xyz) grid and the corresponding q(123) coordinates
+    costheta = np.cos(theta / 180 * np.pi)
+    sintheta = np.sin(theta / 180 * np.pi)
+    qx, qz, qy = qbase * np.array((dq3, dq1*costheta, dq2)).reshape((3,1,1,1))
+    Qnew = (qx.ptp(), qy.ptp(), qz.ptp())
+    q3_new = qx + qz * sintheta / costheta
+    q2_new = qy
+    q1_new = qz / costheta
+    # work out what indices these values would have, and interpolate
+    n3 = (q3_new - q3_old[0,0,0]) / dq3
+    n2 = (q2_new - q2_old[0,0,0]) / dq2
+    n1 = (q1_new - q1_old[0,0,0]) / dq1
+    return map_coordinates(W, (n3, n1, n2)), Qnew
