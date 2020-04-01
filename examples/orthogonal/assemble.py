@@ -1,10 +1,6 @@
 """
 Exemplifies how to run an assembly with real units in the q3 axis,
 which then allows resampling the data on an orthogonal grid.
-
-Slight confusion about a possible factor 2 in Dmax...
-
-Try skewing and see which seems most correct.
 """
 
 import numpy as np
@@ -16,14 +12,14 @@ from diffassemble.utils import generate_initial, generate_envelope, pre_align_ro
 from diffassemble.utils import ProgressPlot, rectify
 
 # input and parameters
-SIMFILE = '../data/test_data.npz'
-data = np.load(SIMFILE)['frames']
-Nj, Nl, ml = 25, 10, 2
+data = np.load('data.npz')['frames']
+Nj, Nl, ml = 25, 10, 1
 Nj_max = 50
 fudge = 5e-5
 increase_Nj_every = 5
 increase_fudge_every = 5
 increase_fudge_by = 2**(1/2)
+fudge_max = 3e-4
 
 # physics
 a = 4.065e-10
@@ -41,17 +37,17 @@ Dmax = 60e-9
 print('%e %e'%(Q3, Q12))
 
 # do the assembly, plotting on each iteration
-data, rolls = pre_align_rolls(data, roll_center=[100,64])
+data, rolls = pre_align_rolls(data, roll_center=[200,64])
 envelope1 = generate_envelope(Nj, data.shape[-1], Q=(Q3, Q12, Q12), Dmax=(Dmax, 1, 1), theta=theta)
 envelope2 = generate_envelope(Nj, data.shape[-1], support=(1, .25, .25))
 W = generate_initial(data, Nj)
 p = ProgressPlot()
 errors = []
-for i in range(60):
+for i in range(40):
     print(i)
     W, Pjlk, timing = M(W, data, Nl=Nl, ml=ml, beta=fudge,
                         force_continuity=True, nproc=4,
-                        roll_center=[100,64])
+                        roll_center=[200,64])
     [print(k, '%.3f'%v) for k, v in timing.items()]
     W, error = C(W, envelope1*envelope2)
     errors.append(error)
@@ -66,12 +62,11 @@ for i in range(60):
         envelope2 = generate_envelope(Nj, data.shape[-1], support=(1, .25, .25))
         print('increased Nj to %u'%Nj)
 
-    if i and (i % increase_fudge_every) == 0:
+    if i and (fudge < fudge_max) and (i % increase_fudge_every) == 0:
         fudge *= increase_fudge_by
         print('increased fudge to %e'%fudge)
 
 # assuming that we now know the q-range, we can interpolate to qx, qy, qz
-print('%e %e'%(Q3, Q12))
 W_ortho, Qnew = rectify(W, (Q12, Q12, Q3), theta)
 
-np.savez(SIMFILE + '_assembled_skewed.npz', data=W, data_ortho=W_ortho)
+np.savez('assembled.npz', W=W, W_ortho=W_ortho, Pjlk=Pjlk, rolls=rolls)

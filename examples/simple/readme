@@ -1,0 +1,8 @@
+Simulates and reassembles a simple strain-free particle, without taking
+account of the skewed grid, the absolute q-scale, or the rotation center
+of phi. The autocorrelation support is applied as a unitless number and
+no absolute sizes are specified.
+
+* simulate.py -> data.npz
+* assemble.py -> assembled.npz (not in repo)
+* evaluate.py
