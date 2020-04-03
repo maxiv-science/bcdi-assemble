@@ -3,15 +3,20 @@ import matplotlib.pyplot as plt
 plt.ion()
 import numpy as np
 
-N = 4 # the number of images on either side of the max
-n = 2 # the step through the third dimension of the data
+N = 3 # the number of images on either side of the max
 shape=32
 
-for strain in (.1, .25, .5, 1):
-	ss = ('%.2f'%strain).replace('.', '')
-	print(ss)
-	with h5py.File('modes_%s.h5'%ss, 'r') as fp:
-	    im = fp['entry_1/data_1/data'][0]
+for run in ('input', .1, .25, .5, 1):
+	if run == 'input':
+		im = np.load('simulated_1.00.npz')['particle']
+		strain = 1.
+		n = 2
+	else:
+		ss = ('%.2f'%run).replace('.', '')
+		with h5py.File('modes_%s.h5'%ss, 'r') as fp:
+		    im = fp['entry_1/data_1/data'][0]
+		strain = run
+		n = 3
 	center = np.argmax(np.sum(np.abs(im), axis=(1,2)))
 	com = np.sum(np.indices(im.shape) * np.abs(im)[None,:,:,:], axis=(1,2,3)) / np.sum(np.abs(im))
 	com = np.round(com).astype(int)
