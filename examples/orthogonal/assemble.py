@@ -43,10 +43,10 @@ envelope2 = generate_envelope(Nj, data.shape[-1], support=(1, .25, .25))
 W = generate_initial(data, Nj)
 p = ProgressPlot()
 errors = []
-for i in range(40):
+for i in range(50):
     print(i)
     W, Pjlk, timing = M(W, data, Nl=Nl, ml=ml, beta=fudge,
-                        force_continuity=True, nproc=4,
+                        force_continuity=True, nproc=24,
                         roll_center=[200,64])
     [print(k, '%.3f'%v) for k, v in timing.items()]
     W, error = C(W, envelope1*envelope2)
@@ -69,4 +69,4 @@ for i in range(40):
 # assuming that we now know the q-range, we can interpolate to qx, qy, qz
 W_ortho, Qnew = rectify(W, (Q12, Q12, Q3), theta)
 
-np.savez('assembled.npz', W=W, W_ortho=W_ortho, Pjlk=Pjlk, rolls=rolls)
+np.savez('assembled.npz', W=W, W_ortho=W_ortho, Pjlk=Pjlk, rolls=rolls, Q=Qnew)
