@@ -1,8 +1,9 @@
-Simulates, reassembles (and phase retrieves?) a strain-free particle.
+Simulates, reassembles and phase retrieves a strain-free particle.
 Full account is taken of the q-space units, so that the orthogonal
 diffraction volume is obtained at the end.
 
 * simulate.py -> data.npz
 * assemble.py -> assembled.npz (not in repo)
-* ...
+* prepare_pynx.py -> data.npz (not in repo)
+* reconstruct -> modes.h5 (not in repo)
 * evaluate.py

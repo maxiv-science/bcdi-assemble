@@ -1,0 +1,10 @@
+Simulates, reassembles and phase retrieves a particle strained
+in its interior with spherical harmonics and a radial part. Full
+account is taken of the q-space units, so that the orthogonal
+diffraction volume is obtained at the end.
+
+* simulate.py -> simulated_x.xx.npz
+* assemble.py -> assembled_x.xx.npz (not in repo)
+* prepare_pynx.py -> prepared_x.xx.npz (not in repo)
+* reconstruct -> modes_x.xx.h5 (not in repo)
+* evaluate.py

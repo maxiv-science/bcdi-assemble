@@ -26,7 +26,7 @@ def simulate_octahedron(offsets, rolls, photons_in_central_frame=1e6, plot=True,
     projection operator before doing the 2D FT.
 
     strain_type: optionally add a phase pattern to the particle, can be
-                 'checks' or 'surface'.
+                 'body' or 'surface'.
     strain_size: size of the phase structures (radians)
     """
 
@@ -69,8 +69,18 @@ def simulate_octahedron(offsets, rolls, photons_in_central_frame=1e6, plot=True,
     v.data[:] = o.contains((xx, -yy, zz))
 
     ### optionally add strain
-    if strain_type == 'checks':
-        v.data[np.where(xx[0] * yy[0] * zz[0] > 0)] *= np.exp(1j * strain_size)
+    if strain_type == 'body':
+        #v.data[np.where(xx[0] * yy[0] * zz[0] > 0)] *= np.exp(1j * strain_size)
+        from scipy.special import sph_harm
+        r = np.sqrt(xx**2 + yy**2 + zz**2)
+        azimuth = np.arctan(yy / (xx + 1e-30))
+        polar = np.arccos(zz / (r + 1e-30))
+        l, m = 3, 2
+        Y = sph_harm(m, l, azimuth, polar).real
+        R = np.sin(r / (diameter * truncation / 2) * np.pi)
+        u = Y * R
+        u = u / u.ptp() * strain_size
+        v.data *= np.exp(1j * u[0])
     elif strain_type == 'surface':
         o.scale(.8)
         v.data[np.where(1 - o.contains((xx[0], -yy[0], zz[0])))] *= np.exp(1j * strain_size)
@@ -115,4 +125,4 @@ def simulate_octahedron(offsets, rolls, photons_in_central_frame=1e6, plot=True,
             ax[i].imshow(noisy_frames[i], vmax=global_max, cmap='jet', norm=matplotlib.colors.LogNorm())
         plt.pause(.1)
 
-    return noisy_frames
+    return noisy_frames, v.data
