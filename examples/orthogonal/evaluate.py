@@ -13,7 +13,7 @@ plt.ion()
 # load assembly and add the pre-alignment rolls
 dct = np.load('assembled.npz')
 Pjlk = dct['Pjlk']
-Pjlk = np.pad(Pjlk, ((0,0), (10,10), (0,0)))
+Pjlk = np.pad(Pjlk, ((0,0), (10,10), (0,0)), mode='constant')
 W = dct['W_ortho']
 prerolls = dct['rolls']
 for k in range(Pjlk.shape[-1]):
