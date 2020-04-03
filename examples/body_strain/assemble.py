@@ -70,6 +70,6 @@ for filename in simfiles:
             print('increased fudge to %e'%fudge)
 
     # assuming that we now know the q-range, we can interpolate to qx, qy, qz
-    W_ortho, Qnew = rectify(W, (Q12, Q12, Q3), theta)
+    W_ortho, Qnew = rectify(W, (Q3, Q12, Q12), theta)
 
     np.savez('assembled_%s.npz'%strain, W=W, W_ortho=W_ortho, Pjlk=Pjlk, rolls=rolls, Q=Qnew)
