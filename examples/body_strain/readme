@@ -3,6 +3,9 @@ in its interior with spherical harmonics and a radial part. Full
 account is taken of the q-space units, so that the orthogonal
 diffraction volume is obtained at the end.
 
+The q-space pixel sizes are kept roughly constant, so that the
+assembled volume can be directly phase retrieved afterwards.
+
 * simulate.py -> simulated_x.xx.npz
 * assemble.py -> assembled_x.xx.npz (not in repo)
 * prepare_pynx.py -> prepared_x.xx.npz (not in repo)
