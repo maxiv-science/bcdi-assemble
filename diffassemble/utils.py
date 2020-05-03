@@ -83,10 +83,14 @@ def inner_Mcalc(j, W, data, ml, Nl, Nk, roll_center):
             logRjlk[l, k] = np.sum(mask * (rolled * np.log(W[j] + 1e-20) - W[j]))
     return logRjlk
 
-def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=True, nproc=4, roll_center=None):
+def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=6, nproc=4, roll_center=None):
     """
     Performs the M update rule, Loh et al PRE 2009 eqns 8-11, with the
     addition of the fudge factor from Ayyer et al J Appl Cryst 2016.
+
+    force_continuity is the standard deviation (in j pixels) of the
+    gaussian applied to enforce continuity of the rocking angle. Set
+    to False or zero to lift this constraint.
     """
     t0 = time.time()
     Nj = W.shape[0]
@@ -103,16 +107,17 @@ def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=True, nproc=4, roll_center
 
     # optionally force Pjk to describe something continuous
     t2 = time.time()
-    if force_continuity==True:
+    if force_continuity:
+        fc = force_continuity
         kmax = np.argmax(np.sum(data, axis=(1,2)))
         com = np.argmax(np.sum(logPjlk, axis=1)[:, kmax])
-        logPjlk[:, :, kmax] += log_gauss(com, np.arange(Nj), 6)[:, None]
+        logPjlk[:, :, kmax] += log_gauss(com, np.arange(Nj), fc)[:, None]
         for k in range(kmax+1, Nk):
             bias = np.argmax(np.sum(logPjlk, axis=1)[:, k-1])
-            logPjlk[:, :, k] += log_gauss(bias, np.arange(Nj), 6)[:, None]
+            logPjlk[:, :, k] += log_gauss(bias, np.arange(Nj), fc)[:, None]
         for k in range(kmax-1, -1, -1):
             bias = np.argmax(np.sum(logPjlk, axis=1)[:, k+1])
-            logPjlk[:, :, k] += log_gauss(bias, np.arange(Nj), 6)[:, None]
+            logPjlk[:, :, k] += log_gauss(bias, np.arange(Nj), fc)[:, None]
             
     # pragmatic pre-normalization to avoid overflow
     t3 = time.time()
