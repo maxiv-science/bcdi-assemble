@@ -233,16 +233,16 @@ class ProgressPlot(object):
         self.fig, self.ax = plt.subplots(ncols=5, figsize=(12,3))
         plt.pause(.1)
 
-    def update(self, W, Pjlk, errors):
+    def update(self, W, Pjlk, errors, vmax=0.1):
         ax = self.ax
         Nj = Pjlk.shape[0]
         [a.clear() for a in ax]
-        ax[0].imshow(np.abs(W[:,64,:]), vmax=np.abs(W[:,64,:]).max()/10)
-        ax[1].imshow(np.abs(W[Nj//2,:,:]), vmax=np.abs(W[Nj//2]).max()/10)
+        ax[0].imshow(W[:,64,:], vmax=W[:,64,:].max()*vmax)
+        ax[1].imshow(W[Nj//2,:,:], vmax=W[Nj//2].max()*vmax)
         Pjk = np.sum(Pjlk, axis=1)
-        ax[2].imshow(np.abs(Pjk), vmax=np.abs(Pjk).max()/10)
+        ax[2].imshow(np.abs(Pjk), vmax=np.abs(Pjk).max()/10, aspect='auto')
         Plk = np.sum(Pjlk, axis=0)
-        ax[3].imshow(np.abs(Plk))#, vmax=np.abs(Plk).max()/10)
+        ax[3].imshow(np.abs(Plk), aspect='auto')#, vmax=np.abs(Plk).max()/10)
         ax[4].plot(errors)
         ax[0].set_title('model from above')
         ax[1].set_title('central model slice')
