@@ -259,18 +259,18 @@ def mean_spread(a):
     spread = np.sum(a * dist) / np.sum(a)
     return spread
 
-def rectify(W, Q, theta, find_order=True):
+def rectify_volume(W, Q, theta, find_order=True):
     """
-    Resamples the model W on an orthogonal grid.
+    Resamples the diffraction volume model W on an orthogonal grid.
     """
-    W1, Qnew = _rectify(W, Q, theta)
-    W2, Qnew = _rectify(np.flip(W, axis=0), Q, theta)
+    W1, Qnew = _rectify_volume(W, Q, theta)
+    W2, Qnew = _rectify_volume(np.flip(W, axis=0), Q, theta)
     if not find_order or (mean_spread(W1) < mean_spread(W2)):
         return W1, Qnew
     else:
         return W2, Qnew
 
-def _rectify(W, Q, theta):
+def _rectify_volume(W, Q, theta):
     """
     Takes the model W, defined over the ranges Q, corresponding to the
     Bragg angle theta, and interpolates it on a regular, orthogonal grid.
@@ -303,3 +303,43 @@ def _rectify(W, Q, theta):
     n2 = (q2_new - q2_old[0,0,0]) / dq2
     n1 = (q1_new - q1_old[0,0,0]) / dq1
     return map_coordinates(W, (n3, n1, n2)), Qnew
+
+def rectify_sample(p, dr, theta, find_order=True):
+    """
+    Resamples the reconstructed sample on an orthogonal grid.
+    """
+    p1, psize = _rectify_sample(p, dr, theta)
+    p2, psize = _rectify_sample(np.flip(p, axis=0), dr, theta)
+    if not find_order or (mean_spread(p1) < mean_spread(p2)):
+        return p1, psize
+    else:
+        return p2, psize
+
+def _rectify_sample(p, dr, theta):
+    """
+    Takes the sample p, samples with dr = (dr3, dr1, dr2), corresponding
+    to the Bragg angle theta, and interpolates it on a regular, orthogonal
+    grid.
+
+    Returns p, psize
+    """
+    print('NOTE: _rectify_sample: not sure of the order (high to low, low to high) of the indexing! think!')
+    # make up the existing natural grid
+    tmp = np.indices(p.shape) - (np.array(p.shape).reshape((3,1,1,1)) - 1) // 2
+    r3_old, r1_old, r2_old = tmp * np.array(dr).reshape((3,1,1,1))
+    dr3, dr1, dr2 = dr
+    # define a new xyz grid and find its r123 coordinates
+    costheta = np.cos(theta / 180 * np.pi)
+    sintheta = np.sin(theta / 180 * np.pi)
+    psize = dr[1] # dr1
+    x, z, y = psize * (np.indices(p.shape) - (np.array(p.shape).reshape((3,1,1,1)) - 1) // 2)
+    r1_new = z - sintheta/costheta * x
+    r2_new = y
+    r3_new = x / costheta
+    # work out what indices these values would have, and interpolate
+    n3 = (r3_new - r3_old[0,0,0]) / dr3
+    n2 = (r2_new - r2_old[0,0,0]) / dr2
+    n1 = (r1_new - r1_old[0,0,0]) / dr1
+    ampl = map_coordinates(np.abs(p), (n3, n1, n2))
+    phase = map_coordinates(np.angle(p), (n3, n1, n2))
+    return ampl * np.exp(1j * phase), psize
