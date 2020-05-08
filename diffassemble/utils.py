@@ -310,9 +310,13 @@ def rectify_sample(p, dr, theta, find_order=True):
     """
     p1, psize = _rectify_sample(p, dr, theta)
     p2, psize = _rectify_sample(np.flip(p, axis=0), dr, theta)
-    if not find_order or (mean_spread(p1) < mean_spread(p2)):
+    if not find_order:
+        return p1, psize
+    elif mean_spread(p1) < mean_spread(p2):
+        print('r3 axis seems to be right - not flipping.')
         return p1, psize
     else:
+        print('flipping r3 axis - seems to be reversed!')
         return p2, psize
 
 def _rectify_sample(p, dr, theta):
@@ -321,25 +325,37 @@ def _rectify_sample(p, dr, theta):
     to the Bragg angle theta, and interpolates it on a regular, orthogonal
     grid.
 
+    Indexing:
+        r3 (low to high)
+        r1 (high to low)
+        r2 (low to high)
+
+    The orthogonal frame p is indexed
+        x (low to high)
+        z (high to low)
+        y (low to high)
+
     Returns p, psize
     """
-    print('NOTE: _rectify_sample: not sure of the order (high to low, low to high) of the indexing! think!')
     # make up the existing natural grid
+    dr = np.abs(np.array(dr))
+    dr[1] *= -1
     tmp = np.indices(p.shape) - (np.array(p.shape).reshape((3,1,1,1)) - 1) // 2
     r3_old, r1_old, r2_old = tmp * np.array(dr).reshape((3,1,1,1))
     dr3, dr1, dr2 = dr
     # define a new xyz grid and find its r123 coordinates
     costheta = np.cos(theta / 180 * np.pi)
     sintheta = np.sin(theta / 180 * np.pi)
-    psize = dr[1] # dr1
+    psize = np.abs(dr[1]) # |dr1|
     x, z, y = psize * (np.indices(p.shape) - (np.array(p.shape).reshape((3,1,1,1)) - 1) // 2)
+    z = np.flip(z, axis=1) # to account for the decreasing indexing
     r1_new = z - sintheta/costheta * x
     r2_new = y
     r3_new = x / costheta
     # work out what indices these values would have, and interpolate
     n3 = (r3_new - r3_old[0,0,0]) / dr3
     n2 = (r2_new - r2_old[0,0,0]) / dr2
-    n1 = (r1_new - r1_old[0,0,0]) / dr1
+    n1 = (r1_old[0,0,0] - r1_new) / np.abs(dr1)
     ampl = map_coordinates(np.abs(p), (n3, n1, n2))
     phase = map_coordinates(np.angle(p), (n3, n1, n2))
     return ampl * np.exp(1j * phase), psize
