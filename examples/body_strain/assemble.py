@@ -9,7 +9,7 @@ plt.ion()
 
 from diffassemble.utils import C, M
 from diffassemble.utils import generate_initial, generate_envelope, pre_align_rolls
-from diffassemble.utils import ProgressPlot, rectify
+from diffassemble.utils import ProgressPlot, rectify_sample
 
 simfiles = [f for f in os.listdir() if 'simulated_' in f and f.endswith('.npz')]
 for filename in simfiles:
@@ -70,6 +70,6 @@ for filename in simfiles:
             print('increased fudge to %e'%fudge)
 
     # assuming that we now know the q-range, we can interpolate to qx, qy, qz
-    W_ortho, Qnew = rectify(W, (Q3, Q12, Q12), theta)
+    W_ortho, Qnew = rectify_sample(W, (Q3, Q12, Q12), theta)
 
     np.savez('assembled_%s.npz'%strain, W=W, W_ortho=W_ortho, Pjlk=Pjlk, rolls=rolls, Q=Qnew)
