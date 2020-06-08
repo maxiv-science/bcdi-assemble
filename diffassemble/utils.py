@@ -107,6 +107,8 @@ def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=6, nproc=4, roll_center=No
 
     # optionally force Pjk to describe something continuous
     t2 = time.time()
+    if force_continuity == True:
+        force_continuity == 6 # avoid automatic casing True->1, 6 is the default.
     if force_continuity:
         fc = force_continuity
         kmax = np.argmax(np.sum(data, axis=(1,2)))

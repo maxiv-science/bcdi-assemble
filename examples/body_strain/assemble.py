@@ -14,8 +14,8 @@ from diffassemble.utils import ProgressPlot, rectify_sample
 simfiles = [f for f in os.listdir() if 'simulated_' in f and f.endswith('.npz')]
 for filename in simfiles:
     # input and parameters
-    Nj, Nl, ml = 25, 10, 1
-    Nj_max = 50
+    Nj, Nl, ml = 20, 10, 1
+    Nj_max = 40
     fudge = 5e-5
     increase_Nj_every = 5
     increase_fudge_every = 5
@@ -49,12 +49,12 @@ for filename in simfiles:
     for i in range(50):
         print(i)
         W, Pjlk, timing = M(W, data, Nl=Nl, ml=ml, beta=fudge,
-                            force_continuity=True, nproc=24,
+                            force_continuity=10, nproc=24,
                             roll_center=[200,64])
         [print(k, '%.3f'%v) for k, v in timing.items()]
-        W, error = C(W, envelope1*envelope2)
+        W, error = C(W, envelope1)#*envelope2)
         errors.append(error)
-        p.update(W, Pjlk, errors)
+        p.update(np.log10(W), Pjlk, errors, vmax=1)
 
         # expand the resolution now and then
         if i and (Nj<Nj_max) and (i % increase_Nj_every) == 0:
@@ -72,4 +72,4 @@ for filename in simfiles:
     # assuming that we now know the q-range, we can interpolate to qx, qy, qz
     W_ortho, Qnew = rectify_sample(W, (Q3, Q12, Q12), theta)
 
-    np.savez('assembled_%s.npz'%strain, W=W, W_ortho=W_ortho, Pjlk=Pjlk, rolls=rolls, Q=Qnew)
+    np.savez('assembled_%s.npz'%strain, W=W, W_ortho=W_ortho, Pjlk=Pjlk, rolls=rolls, Q_ortho=Qnew, Q=(Q3, Q12, Q12))
