@@ -304,12 +304,12 @@ def _rectify_volume(W, Q, theta):
     n1 = (q1_new - q1_old[0,0,0]) / dq1
     return map_coordinates(W, (n3, n1, n2)), Qnew
 
-def rectify_sample(p, dr, theta, find_order=True):
+def rectify_sample(p, dr, theta, find_order=True, interp=3):
     """
     Resamples the reconstructed sample on an orthogonal grid.
     """
-    p1, psize = _rectify_sample(p, dr, theta)
-    p2, psize = _rectify_sample(np.flip(p, axis=0), dr, theta)
+    p1, psize = _rectify_sample(p, dr, theta, interp=interp)
+    p2, psize = _rectify_sample(np.flip(p, axis=0), dr, theta, interp=interp)
     if not find_order:
         return p1, psize
     elif mean_spread(p1) < mean_spread(p2):
@@ -319,7 +319,7 @@ def rectify_sample(p, dr, theta, find_order=True):
         print('flipping r3 axis - seems to be reversed!')
         return p2, psize
 
-def _rectify_sample(p, dr, theta):
+def _rectify_sample(p, dr, theta, interp=3):
     """
     Takes the sample p, samples with dr = (dr3, dr1, dr2), corresponding
     to the Bragg angle theta, and interpolates it on a regular, orthogonal
@@ -356,6 +356,6 @@ def _rectify_sample(p, dr, theta):
     n3 = (r3_new - r3_old[0,0,0]) / dr3
     n2 = (r2_new - r2_old[0,0,0]) / dr2
     n1 = (r1_old[0,0,0] - r1_new) / np.abs(dr1)
-    ampl = map_coordinates(np.abs(p), (n3, n1, n2))
-    phase = map_coordinates(np.angle(p), (n3, n1, n2))
+    ampl = map_coordinates(np.abs(p), (n3, n1, n2), order=interp)
+    phase = map_coordinates(np.angle(p), (n3, n1, n2), order=interp)
     return ampl * np.exp(1j * phase), psize
