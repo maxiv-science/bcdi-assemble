@@ -1,0 +1,19 @@
+rm raw/*.cxi
+
+rm *.cxi
+pynx-id01cdi.py data=prepared_10.npz nb_run_keep=20 nb_run=1000 support_threshold=0.1,0.5
+pynx-cdi-analysis.py *.cxi modes
+mv *.cxi raw/
+mv modes.h5 modes_10.h5
+
+rm *.cxi
+pynx-id01cdi.py data=prepared_1.npz nb_run_keep=20 nb_run=1000 support_threshold=0.1,0.5
+pynx-cdi-analysis.py *.cxi modes
+mv *.cxi raw/
+mv modes.h5 modes_1.h5
+
+rm *.cxi
+pynx-id01cdi.py data=prepared_0.npz nb_run_keep=20 nb_run=1000 support_threshold=0.1,0.5
+pynx-cdi-analysis.py *.cxi modes
+mv *.cxi raw/
+mv modes.h5 modes_0.h5
