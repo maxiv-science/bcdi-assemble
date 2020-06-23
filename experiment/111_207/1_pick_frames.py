@@ -12,8 +12,10 @@ from matplotlib.gridspec import GridSpec
 scan, pos = 111, 207
 begin, end = 0, -1
 
-merlin_base = '/data/visitors/nanomax/20180278/2019060508/raw_compressed/03_runs/scan_%04d_merlin_0000.hdf5'
-mask_file = '/data/visitors/nanomax/common/masks/merlin/20190222/merlin_mask_190222_14keV.h5'
+import sys, os
+PATH = sys.argv[1]
+merlin_base = os.path.join(PATH, 'data1/scan_%04d_merlin_0000.hdf5')
+mask_file = os.path.join(PATH, 'data1/merlin_mask_190222_14keV.h5')
 
 # load and mask data
 with h5py.File(mask_file, 'r') as fp:

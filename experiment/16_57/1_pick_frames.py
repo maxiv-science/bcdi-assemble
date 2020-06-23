@@ -12,8 +12,10 @@ from matplotlib.gridspec import GridSpec
 scan, pos = 16, 57
 begin, end = 0,800
 
-filename = '/gpfs/offline1/staff/nanomax/commissioning_2020-1/20200322_Au/raw/sample/%06u.h5' % scan
-mask_file = '/data/visitors/nanomax/common/masks/merlin/20200430/merlin_mask_200430_8keV.h5'
+import sys, os
+PATH = sys.argv[1]
+filename = os.path.join(PATH, 'data2/%06u.h5' % scan)
+mask_file = os.path.join(PATH, 'data2/merlin_mask_200430_8keV.h5')
 
 # load and mask data
 with h5py.File(mask_file, 'r') as fp:
