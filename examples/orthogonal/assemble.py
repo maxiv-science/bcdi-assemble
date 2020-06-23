@@ -7,9 +7,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 plt.ion()
 
-from diffassemble.utils import C, M
-from diffassemble.utils import generate_initial, generate_envelope, pre_align_rolls
-from diffassemble.utils import ProgressPlot, rectify_sample
+from bcdiass.utils import C, M
+from bcdiass.utils import generate_initial, generate_envelope, pre_align_rolls
+from bcdiass.utils import ProgressPlot, rectify_sample
 
 # input and parameters
 data = np.load('data.npz')['frames']

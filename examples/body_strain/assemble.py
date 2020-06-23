@@ -7,9 +7,9 @@ import os
 import matplotlib.pyplot as plt
 plt.ion()
 
-from diffassemble.utils import C, M
-from diffassemble.utils import generate_initial, generate_envelope, pre_align_rolls
-from diffassemble.utils import ProgressPlot, rectify_sample
+from bcdiass.utils import C, M
+from bcdiass.utils import generate_initial, generate_envelope, pre_align_rolls
+from bcdiass.utils import ProgressPlot, rectify_sample
 
 simfiles = [f for f in os.listdir() if 'simulated_' in f and f.endswith('.npz')]
 for filename in simfiles:

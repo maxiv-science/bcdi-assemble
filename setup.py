@@ -1,12 +1,12 @@
 import setuptools
 
 setuptools.setup(
-    name="diffassemble",
+    name="bcdiass",
     version="0.0.1",
     author="Alexander Bjorling",
     author_email="alexander.bjorling@maxiv.lu.se",
-    description="Diffraction volume assembly for CDI",
-    url="https://github.com/alexbjorling/diffassemble",
+    description="Diffraction volume assembly for Bragg CDI",
+    url="https://github.com/maxiv-science/bcdi-assemble",
     packages=setuptools.find_packages(),
     install_requires=['h5py', 'ipython', 'numpy'],
     classifiers=[

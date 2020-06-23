@@ -3,7 +3,7 @@ Simulates a particle rocking through an arbitrary and noisy rocking
 curve, as well as along the powder ring.
 """
 
-from diffassemble.simulation import simulate_octahedron
+from bcdiass.simulation import simulate_octahedron
 import matplotlib.pyplot as plt
 import numpy as np
 

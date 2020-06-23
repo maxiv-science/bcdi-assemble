@@ -3,8 +3,8 @@ Exemplifies how to run a simple assembly with unitless constraints.
 """
 
 import numpy as np
-from diffassemble.utils import *
-from diffassemble.utils import ProgressPlot
+from bcdiass.utils import *
+from bcdiass.utils import ProgressPlot
 
 # input and parameters
 data = np.load('data.npz')['frames']
