@@ -2,7 +2,6 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 from scipy.ndimage import map_coordinates
-import h5py
 import skimage
 
 import multiprocessing

@@ -9,12 +9,13 @@ plt.ion()
 try:
     from nmutils.utils.bodies import TruncatedOctahedron
 except ImportError:
-    raise Exception('This code uses the NanoMAX nmutils package, see github.')
+    raise Exception('This code uses the NanoMAX nmutils package, see\n'
+        +'https://github.com/maxiv-science/nanomax-analysis-utils\n')
 
 try:
     ptypy.core.geometry_bragg.Geo_BraggProjection
 except AttributeError:
-    raise Exception('Use 3dBPP ptypy version!')
+    raise Exception('Use 3dBPP ptypy branch!')
 
 def simulate_octahedron(offsets, rolls, photons_in_central_frame=1e6, plot=True,
                         strain_type=None, strain_size=.25, roll_center=None):
