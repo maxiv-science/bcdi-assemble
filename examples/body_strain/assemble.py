@@ -15,12 +15,12 @@ simfiles = [f for f in os.listdir() if 'simulated_' in f and f.endswith('.npz')]
 for filename in simfiles:
     # input and parameters
     Nj, Nl, ml = 20, 10, 1
-    Nj_max = 40
-    fudge = 5e-5
+    Nj_max = 60
+    fudge = 2e-5
     increase_Nj_every = 5
     increase_fudge_every = 5
     increase_fudge_by = 2**(1/2)
-    fudge_max = 1e-3
+    fudge_max = 5e-2
     strain = filename.split('.npz')[0].split('simulated_')[1]
     data = np.load(filename)['frames']
 
@@ -40,17 +40,16 @@ for filename in simfiles:
     print('%e %e'%(Q3, Q12))
 
     # do the assembly, plotting on each iteration
-    data, rolls = pre_align_rolls(data, roll_center=[200,64])
+    data, rolls = pre_align_rolls(data, roll_center=None)
     envelope1 = generate_envelope(Nj, data.shape[-1], Q=(Q3, Q12, Q12), Dmax=(Dmax, 1, 1), theta=theta)
     envelope2 = generate_envelope(Nj, data.shape[-1], support=(1, .25, .25))
     W = generate_initial(data, Nj)
     p = ProgressPlot()
     errors = []
-    for i in range(50):
+    for i in range(60):
         print(i)
         W, Pjlk, timing = M(W, data, Nl=Nl, ml=ml, beta=fudge,
-                            force_continuity=10, nproc=24,
-                            roll_center=[200,64])
+                            force_continuity=10, nproc=24)
         [print(k, '%.3f'%v) for k, v in timing.items()]
         W, error = C(W, envelope1)#*envelope2)
         errors.append(error)
