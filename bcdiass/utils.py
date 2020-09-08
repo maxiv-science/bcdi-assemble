@@ -156,8 +156,8 @@ def generate_envelope(N, shape, support=0.25, Q=None, theta=0.0, Dmax=None):
                 ignored. Can also be a float.
     Q:          The q-ranges (Q3, Q1, Q2) spanned by q3, q1, and q2.
     Dmax:       The maximum extent of the particle described along each
-                orthogonal real-space dimension (x, y, z), where the
-                first (x) corresponds to the third dimension. Can also
+                natural real-space dimension (r3, r1, r2), where the
+                first (r3) corresponds to the third dimension. Can also
                 be a float. See citation below.
     theta:      The Bragg angle in degrees.
     """
@@ -191,12 +191,9 @@ def generate_envelope(N, shape, support=0.25, Q=None, theta=0.0, Dmax=None):
         r1 = (r1 - N1 / 2) * dr1
         r2 = (r2 - N2 / 2) * dr2
         r3 = (r3 - N3 / 2) * dr3
-        x = r3 * costheta
-        y = r2
-        z = r1 + r3 * sintheta
-        envelope[np.where((np.abs(x) > Dmax[0]) |
-                          (np.abs(y) > Dmax[1]) |
-                          (np.abs(z) > Dmax[2]))] = 0
+        envelope[np.where((np.abs(r3) > Dmax[0]) |
+                          (np.abs(r1) > Dmax[1]) |
+                          (np.abs(r2) > Dmax[2]))] = 0
         envelope = np.roll(envelope, (N//2, shape//2, shape//2), axis=(0,1,2))
     return envelope
 
