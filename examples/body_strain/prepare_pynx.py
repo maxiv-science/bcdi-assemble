@@ -6,7 +6,7 @@ import os
 assfiles = [f for f in os.listdir() if 'assembled_' in f and f.endswith('.npz')]
 
 for filename in assfiles:
-	data = np.load(filename)['W'][:]
+	data = np.load(filename)['W'][5:-5]
 	strain = filename.split('.npz')[0].split('assembled_')[1]
 
 	# pad to equal side, it gets weird otherwise
