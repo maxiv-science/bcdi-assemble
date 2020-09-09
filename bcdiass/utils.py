@@ -175,7 +175,7 @@ def generate_envelope(N, shape, support=0.25, Q=None, theta=0.0, Dmax=None):
         envelope[:, :, n2:-n2] = 0
     else:
         # take the geometry into account and confine the autocorrelation
-        # in orthogonal xyz real space. See this paper for details:
+        # in natural-coordinate real space. See this paper for details:
         # Berenguer et al, PRB 2013 10.1103/PhysRevB.88.144101
         if np.isscalar(Q):
             Q = (Q,) * 3
