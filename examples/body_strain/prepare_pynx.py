@@ -3,12 +3,7 @@ import numpy as np
 from scipy.ndimage.interpolation import map_coordinates
 import os
 
-assfiles = [f for f in os.listdir() if 'assembled_' in f and f.endswith('.npz')]
-
-for filename in assfiles:
-	data = np.load(filename)['W'][5:-5]
-	strain = filename.split('.npz')[0].split('assembled_')[1]
-
+def prepare(data, label):
 	# pad to equal side, it gets weird otherwise
 	pad = data.shape[-1] - data.shape[0]
 	before = (pad + 1) // 2
@@ -21,4 +16,18 @@ for filename in assfiles:
 	data = np.roll(data, shifts, axis=(0,1,2))
 
 	print('maximum data pixel was %u'%data.max())
-	np.savez('prepared_%s.npz'%strain.replace('.', ''), data=(data*10).astype(int))
+	np.savez('prepared_%s.npz'%label, data=(data*10).astype(int))
+
+# data from assembly
+assfiles = [f for f in os.listdir() if 'assembled_' in f and f.endswith('.npz')]
+for filename in assfiles:
+	data = np.load(filename)['W'][5:-5]
+	strain = filename.split('.npz')[0].split('_')[1]
+	prepare(data, label=strain.replace('.', ''))
+
+# regularly spaced data for comparison
+simfiles = [f for f in os.listdir() if 'simulated_' in f and f.endswith('.npz')]
+for filename in simfiles:
+	data = np.load(filename)['frames_regular'][:]
+	strain = filename.split('.npz')[0].split('_')[1].replace('.', '')
+	prepare(data, label=strain+'regular')
