@@ -49,7 +49,8 @@ for filename in simfiles:
     for i in range(100):
         print(i)
         W, Pjlk, timing = M(W, data, Nl=Nl, ml=ml, beta=fudge,
-                            force_continuity=(6 if i<50 else 10), nproc=24)
+                            force_continuity=(6 if i<50 else 10), nproc=24,
+                            find_direction=(i>10))
         [print(k, '%.3f'%v) for k, v in timing.items()]
         W, error = C(W, envelope1)#*envelope2)
         errors.append(error)
@@ -68,7 +69,4 @@ for filename in simfiles:
             fudge *= increase_fudge_by
             print('increased fudge to %e'%fudge)
 
-    # assuming that we now know the q-range, we can interpolate to qx, qy, qz
-    W_ortho, Qnew = rectify_sample(W, (Q3, Q12, Q12), theta)
-
-    np.savez('assembled_%s.npz'%strain, W=W, W_ortho=W_ortho, Pjlk=Pjlk, rolls=rolls, Q_ortho=Qnew, Q=(Q3, Q12, Q12))
+    np.savez('assembled_%s.npz'%strain, W=W, Pjlk=Pjlk, rolls=rolls, Q=(Q3, Q12, Q12))

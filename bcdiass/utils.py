@@ -82,7 +82,8 @@ def inner_Mcalc(j, W, data, ml, Nl, Nk, roll_center):
             logRjlk[l, k] = np.sum(mask * (rolled * np.log(W[j] + 1e-20) - W[j]))
     return logRjlk
 
-def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=6, nproc=4, roll_center=None):
+def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=6, nproc=4,
+      roll_center=None, find_direction=True):
     """
     Performs the M update rule, Loh et al PRE 2009 eqns 8-11, with the
     addition of the fudge factor from Ayyer et al J Appl Cryst 2016.
@@ -128,6 +129,21 @@ def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=6, nproc=4, roll_center=No
     
     # then carry out the likelihood maximization (M) step
     W = build_model(data, Pjlk, ml=ml, roll_center=roll_center, nproc=nproc)
+
+    # optionally analyze the rocking curve direction, which if
+    # wrong would cause an erroneous Dmax. This builds on the
+    # coordinate convention and the fact that the diffraction
+    # intensity should be seen at higher q1 values for higher q3
+    # values.
+    if find_direction:
+        vert_inds = np.indices(W.shape)[1]
+        vert_com = np.sum(vert_inds * W, axis=(1,2)) / np.sum(W, axis=(1,2))
+        vert_com = vert_com[Nj//4:-Nj//4]
+        slope = np.sum((np.arange(len(vert_com)) - len(vert_com)/2) * (vert_com - np.mean(vert_com)))
+        if slope > 0:
+            print('slope is', slope, 'so flipping!')
+            W = np.flip(W, axis=0)
+            Pjlk = np.flip(Pjlk, axis=0)
 
     t4 = time.time()
     timing = {'total': t4-t0, 'Pjlk calculation': t2-t1,
