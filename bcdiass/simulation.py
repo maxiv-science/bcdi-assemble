@@ -105,16 +105,21 @@ def simulate_octahedron(offsets, rolls, photons_in_central_frame=1e6, plot=True,
 
     ### add shot noise
     frames = [d['diff'] for d in data]
-    central = np.argmin(np.abs(offsets))
-    photons_per_intensity = photons_in_central_frame / frames[central].sum()
-    global_max = frames[central].max() * photons_per_intensity
-    noisy_frames = []
-    for i, frame in enumerate(frames):
-        mask = frame < 0
-        frame[mask] = 0
-        noisy = nmutils.utils.noisyImage(frame, photonsTotal=photons_per_intensity*frame.sum())
-        noisy[mask] = -1
-        noisy_frames.append(noisy)
+    if photons_in_central_frame is not None:
+        central = np.argmin(np.abs(offsets))
+        photons_per_intensity = photons_in_central_frame / frames[central].sum()
+        global_max = frames[central].max() * photons_per_intensity
+        noisy_frames = []
+        for i, frame in enumerate(frames):
+            mask = frame < 0
+            frame[mask] = 0
+            noisy = nmutils.utils.noisyImage(frame, photonsTotal=photons_per_intensity*frame.sum())
+            noisy[mask] = -1
+            noisy_frames.append(noisy)
+        frames = noisy_frames
+    else:
+        central = np.argmin(np.abs(offsets))
+        global_max = frames[central].max()
 
     ### plot if requested
     if plot:
@@ -123,7 +128,7 @@ def simulate_octahedron(offsets, rolls, photons_in_central_frame=1e6, plot=True,
         ax = ax.flatten()
         fig.subplots_adjust(hspace=0, wspace=0, right=.85, left=.06, bottom=.1, top=.99)
         for i, frame in enumerate(frames):
-            ax[i].imshow(noisy_frames[i], vmax=global_max, cmap='jet', norm=matplotlib.colors.LogNorm())
+            ax[i].imshow(frame, vmax=global_max, cmap='jet', norm=matplotlib.colors.LogNorm())
         plt.pause(.1)
 
-    return noisy_frames, v.data
+    return frames, v.data
