@@ -1,4 +1,4 @@
-for datafile in prepared_*.npz
+for datafile in prepared*.npz
 	do
 		# find filename and strain as a string
 		prefix="${datafile%.*}"
