@@ -2,7 +2,7 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 from scipy.ndimage import map_coordinates
-import skimage
+import skimage.transform
 
 import multiprocessing
 from functools import partial
