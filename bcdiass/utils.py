@@ -92,7 +92,8 @@ def inner_Mcalc(j, W, data, ml, Nl, Nk, roll_center):
     return logRjlk
 
 def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=6, nproc=4,
-      roll_center=None, find_direction=True):
+      roll_center=None, find_direction=True, cap_coefficients=None,
+      center_model=False):
     """
     Performs the M update rule, Loh et al PRE 2009 eqns 8-11, with the
     addition of the fudge factor from Ayyer et al J Appl Cryst 2016.
@@ -135,9 +136,30 @@ def M(W, data, Nl=1, ml=1, beta=1.0, force_continuity=6, nproc=4,
     logPjlk -= np.max(logPjlk, axis=(0,1))
     Pjlk = np.exp(logPjlk)
     Pjlk /= np.sum(Pjlk, axis=(0,1))
+
+    # optionally cap Pjlk
+    if cap_coefficients is not None:
+        inds = np.where(Pjlk < cap_coefficients)
+        print('capping %u Pjlk elements' % len(inds[0]))
+        Pjlk[inds] = 0
+        Pjlk /= np.sum(Pjlk, axis=(0,1))
     
     # then carry out the likelihood maximization (M) step
     W = build_model(data, Pjlk, ml=ml, roll_center=roll_center, nproc=nproc)
+
+    # optionally center the model and Pjlk matrix
+    if center_model:
+        brightest = np.argmax(W.sum(axis=(1,2)))
+        shift = Nj // 2 - brightest
+        print('shifting model by %u steps'%shift)
+        before, after = max(0, shift), max(0, -shift)
+        if before: # can't do this in one go bc -0 means 0
+            W = np.pad(W, [(before, after), (0,0), (0,0)])[:-before]
+            Pjlk = np.pad(Pjlk, [(before, after), (0,0), (0,0)])[:-before]
+        if after:
+            W = np.pad(W, [(before, after), (0,0), (0,0)])[after:]
+            Pjlk = np.pad(Pjlk, [(before, after), (0,0), (0,0)])[after:]
+        Pjlk /= np.sum(Pjlk, axis=(0,1))
 
     # optionally analyze the rocking curve direction, which if
     # wrong would cause an erroneous Dmax. This builds on the
