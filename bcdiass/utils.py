@@ -311,19 +311,24 @@ class ProgressPlot(object):
         self.fig, self.ax = plt.subplots(ncols=5, figsize=(12,3))
         plt.pause(.1)
 
-    def update(self, W, Pjlk, errors, vmax=0.1):
+    def update(self, W, Pjlk, errors, vmax=0.1, log=True):
         ax = self.ax
         Nj = Pjlk.shape[0]
         [a.clear() for a in ax]
-        ax[0].imshow(W[:,64,:], vmax=W[:,64,:].max()*vmax)
-        ax[1].imshow(W[Nj//2,:,:], vmax=W[Nj//2].max()*vmax)
+        proj = np.sum(W, axis=1)
+        fun = np.log10 if log else lambda x:x
+        ax[0].imshow(fun(proj), vmax=fun(proj*vmax).max(), aspect='auto', interpolation='none')
+        #ax[0].imshow(W[:,64,:], vmax=W[:,64,:].max()*vmax)
+        proj = np.sum(W, axis=0)
+        ax[1].imshow(fun(proj), vmax=fun(proj*vmax).max(), interpolation='none')
+        #ax[1].imshow(W[Nj//2,:,:], vmax=W[Nj//2].max()*vmax)
         Pjk = np.sum(Pjlk, axis=1)
-        ax[2].imshow(np.abs(Pjk), vmax=np.abs(Pjk).max()/10, aspect='auto')
+        ax[2].imshow(np.abs(Pjk), vmax=np.abs(Pjk).max()*vmax, aspect='auto', interpolation='none')
         Plk = np.sum(Pjlk, axis=0)
-        ax[3].imshow(np.abs(Plk), aspect='auto')#, vmax=np.abs(Plk).max()/10)
+        ax[3].imshow(np.abs(Plk), aspect='auto', interpolation='none')#, vmax=np.abs(Plk).max()/10)
         ax[4].plot(errors)
-        ax[0].set_title('model from above')
-        ax[1].set_title('central model slice')
+        ax[0].set_title('projected model from above')
+        ax[1].set_title('projected model from front')
         ax[2].set_title('|Pjk|')
         ax[3].set_title('|Plk|')
         ax[4].set_title('Error')
