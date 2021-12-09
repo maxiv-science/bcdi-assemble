@@ -29,19 +29,28 @@ def roll(im, pixels, roll_center=None):
         rolled = np.roll(im, pixels, axis=-1)
     else:
         # mask out masked pixels to avoid interpolation weirdness
+        dtype = im.dtype
         im = im.astype(float)
         im[np.where(im < 0)] = np.nan
 
         # approximate number of pixels per degree
         dist = np.sqrt(np.sum((np.array(roll_center) - np.array(im.shape)/2)**2))
         angle = pixels / dist / np.pi * 180
-        rolled = skimage.transform.rotate(im, angle=-angle,
-                    center=roll_center[::-1], # rotate takes (col, row)
-                    mode='reflect')
-#                    mode='constant', cval=-1)
+        # the roll angle is always positive and skimage rotates counter-clockwise,
+        # but we want a positive roll to correspond to pixels to the right, so
+        # change sign if center is below.
+        if roll_center[0] > im.shape[0] / 2:
+            angle *= -1
+        rolled = skimage.transform.rotate(im, angle=angle,
+                    center=roll_center[::-1], # skimage rotate takes (col, row)
+                    mode='reflect', order=0)
 
         # restore the normal mask
         rolled[np.where(np.isnan(rolled))] = -1
+
+        # cast back from float
+        rolled = rolled.astype(dtype)
+
     return rolled
 
 def inner_Mbuild(j, data, ml, roll_center, Pjlk):
@@ -226,12 +235,31 @@ def generate_initial(data, Nj, sigma=1.):
     Pjlk = Pjk.reshape((Nj, 1, Nk))
     return build_model(data, Pjlk) + 1e-20
 
-def pre_align_rolls(data, roll_center):
+def pre_align_rolls(data, roll_center, threshold=None, plot=False):
+
     rolls = np.zeros(len(data), dtype=np.int)
     ii, jj = np.indices(data[0].shape)
     mask = (data[0] >= 0)
+
+    if plot:
+        plt.ion()
+        fig, ax = plt.subplots(ncols=3)
+        fig.suptitle('Pre-alignment of roll direction')
+        ax[0].imshow(np.log10(data.sum(axis=1)))
+        ax[0].set_title('raw data')
+
+    if threshold:
+        data_ = data.copy()
+        data_[data_ < threshold] = 0
+    else:
+        data_ = data
+
+    if plot:
+        ax[1].imshow(np.log10(data_.sum(axis=1)))
+        ax[1].set_title('thresholded')
+
     for k in range(len(data)):
-        com = np.sum(jj * data[k] * mask) / np.sum(data[k] * mask)
+        com = np.sum(jj * data_[k] * mask) / np.sum(data_[k] * mask)
         try:
             shift = int(np.round(data.shape[-1]//2 - com))
         except ValueError:
@@ -239,6 +267,11 @@ def pre_align_rolls(data, roll_center):
             shift = 0
         data[k] = roll(data[k], shift, roll_center)
         rolls[k] = shift
+
+    if plot:
+        ax[2].imshow(np.log10(data.sum(axis=1)))
+        ax[2].set_title('pre-aligned')
+
     return data, rolls
 
 class ProgressPlot(object):
