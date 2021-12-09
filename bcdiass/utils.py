@@ -205,7 +205,8 @@ def generate_envelope(N, shape, support=0.25, Q=None, theta=0.0, Dmax=None):
     Dmax:       The maximum extent of the particle described along each
                 natural real-space dimension (r3, r1, r2), where the
                 first (r3) corresponds to the third dimension. Can also
-                be a float. See citation below.
+                be a float, in which case a sphere is used. See citation
+                below.
     theta:      The Bragg angle in degrees.
     """
     envelope = np.ones((N, shape, shape), dtype=int)
@@ -238,10 +239,18 @@ def generate_envelope(N, shape, support=0.25, Q=None, theta=0.0, Dmax=None):
         r1 = (r1 - N1 / 2) * dr1
         r2 = (r2 - N2 / 2) * dr2
         r3 = (r3 - N3 / 2) * dr3
-        envelope[np.where((np.abs(r3) > Dmax[0]) |
-                          (np.abs(r1) > Dmax[1]) |
-                          (np.abs(r2) > Dmax[2]))] = 0
+        if hasattr(Dmax, '__iter__'):
+            # a box
+            print('generating a shoebox envelope')
+            envelope[np.where((np.abs(r3) > Dmax[0]) |
+                              (np.abs(r1) > Dmax[1]) |
+                              (np.abs(r2) > Dmax[2]))] = 0
+        else:
+            # a sphere
+            print('generating a spherical envelope')
+            envelope[np.where(r1**2 + r2**2 + r3**2 > Dmax**2)] = 0
         envelope = np.roll(envelope, (N//2, shape//2, shape//2), axis=(0,1,2))
+    print('autocorrelation envelope %.1f%%' % (100*envelope.sum()/np.prod(envelope.shape)))
     return envelope
 
 def generate_initial(data, Nj, sigma=1.):
